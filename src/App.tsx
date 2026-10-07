@@ -21,6 +21,7 @@ import { BatchRenameModal } from './components/BatchRenameModal';
 import { ContextMenu, ContextMenuState } from './components/ContextMenu';
 import { SettingsModal } from './components/SettingsModal';
 import { Toast, ToastMessage } from './components/Toast';
+import { t, Language } from './i18n/translations';
 
 export const App: React.FC = () => {
   // Folder & Data States
@@ -38,19 +39,30 @@ export const App: React.FC = () => {
   const [theme, setTheme] = useState<'system' | 'dark' | 'light' | 'black'>(() => {
     return (localStorage.getItem('vxphotos_theme') as any) || 'dark';
   });
-  const [language, setLanguage] = useState<'vi' | 'en'>(() => {
+  const [language, setLanguage] = useState<Language>(() => {
     return (localStorage.getItem('vxphotos_lang') as any) || 'vi';
   });
 
   useEffect(() => {
     localStorage.setItem('vxphotos_theme', theme);
     const root = document.documentElement;
-    if (theme === 'light') {
+    root.classList.remove('light-theme', 'black-theme', 'dark');
+
+    let resolved = theme;
+    if (theme === 'system') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      resolved = prefersDark ? 'dark' : 'light';
+    }
+
+    if (resolved === 'light') {
       root.classList.add('light-theme');
-      root.classList.remove('dark');
+      root.setAttribute('data-theme', 'light');
+    } else if (resolved === 'black') {
+      root.classList.add('black-theme');
+      root.setAttribute('data-theme', 'black');
     } else {
-      root.classList.remove('light-theme');
       root.classList.add('dark');
+      root.setAttribute('data-theme', 'dark');
     }
   }, [theme]);
 
@@ -335,7 +347,7 @@ export const App: React.FC = () => {
     try {
       const res = await tauriApi.rotateLossless(targets, degrees);
       setCacheBust(res.cache_bust_timestamp);
-      showToast('success', `Đã xoay lossless ${res.success_count} ảnh`);
+      showToast('success', t('rotatedSuccess', language, { count: res.success_count }));
     } catch (e: any) {
       showToast('error', `Lỗi xoay ảnh: ${e}`);
     }
@@ -396,7 +408,7 @@ export const App: React.FC = () => {
 
     try {
       const res = await tauriApi.moveOrCopyFiles(targets, destFolder, actionType);
-      showToast('success', `Đã chuyển ${res.success_count} ảnh vào thư mục`);
+      showToast('success', t('movedSuccess', language, { count: res.success_count }));
       setMarkedIds((prev) => {
         const next = new Set(prev);
         targets.forEach((t) => next.delete(t));
@@ -414,6 +426,48 @@ export const App: React.FC = () => {
   const handleDragStart = (e: React.DragEvent, item: FileItem) => {
     const targets = markedIds.has(item.id) ? Array.from(markedIds) : [item.id];
     e.dataTransfer.setData('text/plain', JSON.stringify(targets));
+    try {
+      e.dataTransfer.effectAllowed = 'move';
+    } catch {}
+
+    // Custom compact pill drag badge showing dragging count
+    try {
+      const ghost = document.createElement('div');
+      ghost.style.position = 'fixed';
+      ghost.style.top = '-9999px';
+      ghost.style.left = '-9999px';
+      ghost.style.padding = '6px 12px';
+      ghost.style.borderRadius = '9999px';
+      ghost.style.backgroundColor = '#06b6d4';
+      ghost.style.color = '#000000';
+      ghost.style.fontWeight = '700';
+      ghost.style.fontSize = '12px';
+      ghost.style.lineHeight = '1';
+      ghost.style.display = 'flex';
+      ghost.style.alignItems = 'center';
+      ghost.style.gap = '6px';
+      ghost.style.boxShadow = '0 8px 20px rgba(6, 182, 212, 0.5), 0 2px 4px rgba(0,0,0,0.4)';
+      ghost.style.border = '2px solid #ffffff';
+      ghost.style.zIndex = '99999';
+      ghost.style.pointerEvents = 'none';
+
+      ghost.innerHTML = `
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+          <circle cx="9" cy="9" r="2"/>
+          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+        </svg>
+        <span>${targets.length} ảnh</span>
+      `;
+
+      document.body.appendChild(ghost);
+      e.dataTransfer.setDragImage(ghost, 20, 14);
+      setTimeout(() => {
+        if (ghost.parentNode) {
+          ghost.parentNode.removeChild(ghost);
+        }
+      }, 0);
+    } catch {}
   };
 
   // Create subfolder
@@ -575,7 +629,7 @@ export const App: React.FC = () => {
         onToggleSidebar={() => setIsSidebarOpen((p) => !p)}
         onToggleInfo={() => setIsInfoOpen((p) => !p)}
         onSwitchView={setViewMode}
-        currentFolder={folderPath}
+        language={language}
       />
 
       {/* 2. Top Filter Toolbar */}
@@ -594,6 +648,7 @@ export const App: React.FC = () => {
         onZoomSizeChange={setZoomSize}
         isInfoOpen={isInfoOpen}
         onToggleInfo={() => setIsInfoOpen((p) => !p)}
+        language={language}
         counts={counts}
       />
 
@@ -605,6 +660,7 @@ export const App: React.FC = () => {
           onToggle={() => setIsSidebarOpen((p) => !p)}
           parentFolderName={folderPath ? folderPath.split('/').pop() || '' : ''}
           subfolders={subfolders}
+          language={language}
           onCreateSubfolder={handleCreateSubfolder}
           onDropFiles={(dest, paths) => handleMoveFiles(dest, 'MOVE', paths)}
           onFolderContextMenu={handleFolderContextMenu}
@@ -645,6 +701,7 @@ export const App: React.FC = () => {
           <BatchActionBar
             markedCount={markedIds.size}
             subfolders={subfolders}
+            language={language}
             onRotate={() => handleRotate(90)}
             onRename={handleOpenBatchRename}
             onMoveToFolder={(dest) => handleMoveFiles(dest, 'MOVE')}
@@ -657,6 +714,7 @@ export const App: React.FC = () => {
           isOpen={isInfoOpen}
           onClose={() => setIsInfoOpen(false)}
           item={currentFocusedItem}
+          language={language}
         />
       </div>
 

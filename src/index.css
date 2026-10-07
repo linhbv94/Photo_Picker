@@ -18,13 +18,13 @@
   }
 }
 
-/* Dark Theme */
-.dark body {
+/* 1. Dark Theme (Standard Slate Navy - Default) */
+.dark body, body {
   background-color: #0f1117;
   color: #f8fafc;
 }
 
-.dark .glass-panel {
+.dark .glass-panel, .glass-panel {
   background: rgba(20, 24, 33, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -32,7 +32,7 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
-.dark .glass-dropdown {
+.dark .glass-dropdown, .glass-dropdown {
   background: rgba(15, 20, 28, 0.96);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -41,28 +41,114 @@
   color: #f1f5f9;
 }
 
-/* Light Theme (Adaptive OS & Light Clean) */
-.light body {
-  background-color: #f8fafc;
-  color: #0f172a;
+/* 2. Light Theme (Adaptive Clean Studio) */
+.light-theme body,
+html.light-theme body,
+[data-theme="light"] body {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
 }
 
-.light .glass-panel {
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  color: #0f172a;
+html.light-theme .bg-\[\#0f1117\],
+[data-theme="light"] .bg-\[\#0f1117\] {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
 }
 
-.light .glass-dropdown {
-  background: #ffffff;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.12);
-  color: #0f172a;
+html.light-theme .bg-\[\#141821\],
+html.light-theme .bg-\[\#141821\]\/95,
+html.light-theme .bg-\[\#141821\]\/80,
+html.light-theme .bg-\[\#141821\]\/70,
+[data-theme="light"] .bg-\[\#141821\],
+[data-theme="light"] .bg-\[\#141821\]\/95,
+[data-theme="light"] .bg-\[\#141821\]\/80,
+[data-theme="light"] .bg-\[\#141821\]\/70 {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html.light-theme .bg-\[\#1a1f2c\],
+[data-theme="light"] .bg-\[\#1a1f2c\] {
+  background-color: #e2e8f0 !important;
+}
+
+html.light-theme .border-white\/5,
+html.light-theme .border-white\/10,
+html.light-theme .border-white\/20,
+[data-theme="light"] .border-white\/5,
+[data-theme="light"] .border-white\/10,
+[data-theme="light"] .border-white\/20 {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+html.light-theme .text-white,
+html.light-theme .text-slate-100,
+html.light-theme .text-slate-200,
+html.light-theme .text-slate-300,
+[data-theme="light"] .text-white,
+[data-theme="light"] .text-slate-100,
+[data-theme="light"] .text-slate-200,
+[data-theme="light"] .text-slate-300 {
+  color: #0f172a !important;
+}
+
+html.light-theme .text-slate-400,
+[data-theme="light"] .text-slate-400 {
+  color: #475569 !important;
+}
+
+html.light-theme .text-slate-500,
+[data-theme="light"] .text-slate-500 {
+  color: #64748b !important;
+}
+
+html.light-theme .glass-panel,
+[data-theme="light"] .glass-panel {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+  color: #0f172a !important;
+}
+
+html.light-theme .glass-dropdown,
+[data-theme="light"] .glass-dropdown {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.12) !important;
+  color: #0f172a !important;
+}
+
+/* 3. OLED Black Theme (#000000) */
+.black-theme body,
+html.black-theme body,
+[data-theme="black"] body {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+html.black-theme .bg-\[\#0f1117\],
+[data-theme="black"] .bg-\[\#0f1117\] {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+html.black-theme .bg-\[\#141821\],
+html.black-theme .bg-\[\#141821\]\/95,
+html.black-theme .bg-\[\#141821\]\/80,
+html.black-theme .bg-\[\#141821\]\/70,
+[data-theme="black"] .bg-\[\#141821\],
+[data-theme="black"] .bg-\[\#141821\]\/95,
+[data-theme="black"] .bg-\[\#141821\]\/80,
+[data-theme="black"] .bg-\[\#141821\]\/70 {
+  background-color: #080808 !important;
+  color: #ffffff !important;
+}
+
+html.black-theme .border-white\/5,
+html.black-theme .border-white\/10,
+[data-theme="black"] .border-white\/5,
+[data-theme="black"] .border-white\/10 {
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 /* Custom scrollbar */

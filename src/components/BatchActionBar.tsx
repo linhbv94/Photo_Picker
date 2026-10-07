@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { RotateCw, Edit3, FolderInput, X, Zap, ChevronUp } from 'lucide-react';
 import { SubfolderItem } from '../types';
+import { t, Language } from '../i18n/translations';
 
 interface BatchActionBarProps {
   markedCount: number;
   subfolders: SubfolderItem[];
+  language?: Language;
   onRotate: () => void;
   onRename: () => void;
   onMoveToFolder: (folderPath: string) => void;
@@ -14,6 +16,7 @@ interface BatchActionBarProps {
 export const BatchActionBar: React.FC<BatchActionBarProps> = ({
   markedCount,
   subfolders,
+  language = 'vi',
   onRotate,
   onRename,
   onMoveToFolder,
@@ -41,7 +44,7 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
       {/* Badge Count (Strict single line) */}
       <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30 whitespace-nowrap shrink-0">
         <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
-        <span>ĐÃ CHỌN {markedCount} ẢNH</span>
+        <span>{t('selectedCount', language, { count: markedCount })}</span>
       </div>
 
       <div className="h-5 w-px bg-white/10 shrink-0" />
@@ -50,23 +53,23 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
       <button
         onClick={onRotate}
         className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all font-medium active:scale-95 whitespace-nowrap shrink-0"
-        title="Xoay 90° các ảnh đã chọn (R)"
+        title="Xoay 90° (R)"
       >
         <RotateCw className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-        <span>Xoay 90°</span>
+        <span>{t('rotate90', language)}</span>
       </button>
 
       {/* Action: Rename */}
       <button
         onClick={onRename}
         className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all font-medium active:scale-95 whitespace-nowrap shrink-0"
-        title="Đổi tên hàng loạt theo ngày chụp (Cmd/Ctrl+R)"
+        title="Cmd/Ctrl+R"
       >
         <Edit3 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-        <span>Đổi tên hàng loạt</span>
+        <span>{t('batchRenameBtn', language)}</span>
       </button>
 
-      {/* Action: Move to Subfolder (Click-to-Toggle Dropdown, never vanishes accidentally) */}
+      {/* Action: Move to Subfolder (Click-to-Toggle Dropdown) */}
       {subfolders.length > 0 && (
         <div ref={folderMenuRef} className="relative shrink-0">
           <button
@@ -76,17 +79,16 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
                 ? 'bg-amber-500/25 text-amber-200 border border-amber-400/40'
                 : 'bg-white/10 hover:bg-white/20 text-white'
             }`}
-            title="Chuyển ảnh vào thư mục con"
           >
             <FolderInput className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span>Chuyển vào...</span>
+            <span>{t('moveTo', language)}</span>
             <ChevronUp className={`w-3 h-3 text-slate-400 transition-transform ${isFolderMenuOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {isFolderMenuOpen && (
             <div className="absolute bottom-full left-0 mb-2 w-56 rounded-xl glass-dropdown p-1.5 z-50 shadow-2xl border border-white/15 animate-in fade-in zoom-in-95 duration-100 max-h-60 overflow-y-auto">
               <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider font-semibold text-slate-400 border-b border-white/5 mb-1">
-                Chọn thư mục đích
+                {t('chooseSubfolder', language)}
               </div>
               {subfolders.map((f) => (
                 <button
@@ -112,10 +114,10 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
       <button
         onClick={onUnmarkAll}
         className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 hover:text-red-200 border border-red-500/30 transition-all font-medium active:scale-95 whitespace-nowrap shrink-0"
-        title="Hủy đánh dấu toàn bộ (Phím Esc)"
+        title="Esc"
       >
         <X className="w-3.5 h-3.5 shrink-0" />
-        <span>Hủy chọn tất cả (Esc)</span>
+        <span>{t('cancelSelection', language)}</span>
       </button>
     </div>
   );

@@ -11,6 +11,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { FilterMode, ViewMode } from '../types';
+import { t, Language } from '../i18n/translations';
 
 interface TopToolbarProps {
   currentPath: string;
@@ -27,6 +28,7 @@ interface TopToolbarProps {
   onZoomSizeChange: (size: number) => void;
   isInfoOpen: boolean;
   onToggleInfo: () => void;
+  language?: Language;
   counts: {
     total: number;
     camera: number;
@@ -50,12 +52,13 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   onZoomSizeChange,
   isInfoOpen,
   onToggleInfo,
+  language = 'vi',
   counts,
 }) => {
   return (
     <header
       className="h-11 w-full bg-[#141821]/80 border-b border-white/5 flex items-center justify-between px-3 select-none text-xs shrink-0 z-20 backdrop-blur-md gap-3"
-      title={currentPath ? `Thư mục hiện tại: ${currentPath}` : 'Chưa mở thư mục'}
+      title={currentPath || ''}
     >
       {/* Left: Filter Chips */}
       <div className="flex items-center gap-1.5 overflow-x-auto py-1">
@@ -71,7 +74,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           }`}
         >
           <CheckCircle2 className="w-3 h-3" />
-          <span>Tất cả ({counts.total})</span>
+          <span>{t('filterAll', language)} ({counts.total})</span>
         </button>
 
         <button
@@ -86,7 +89,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           }`}
         >
           <Camera className="w-3 h-3 text-cyan-300" />
-          <span>Máy ảnh ({counts.camera})</span>
+          <span>{t('filterCamera', language)} ({counts.camera})</span>
         </button>
 
         {counts.phone > 0 && (
@@ -95,7 +98,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
             className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition-all text-xs font-medium"
           >
             <Smartphone className="w-3 h-3 text-emerald-400" />
-            <span>Điện thoại ({counts.phone})</span>
+            <span>Mobile ({counts.phone})</span>
           </button>
         )}
 
@@ -111,7 +114,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           }`}
         >
           <Monitor className="w-3 h-3" />
-          <span>Screenshot ({counts.screenshot})</span>
+          <span>{t('filterScreenshot', language)} ({counts.screenshot})</span>
         </button>
 
         {/* Camera Models Dropdown */}
@@ -121,7 +124,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
             onChange={(e) => onSelectCameraModel(e.target.value || null)}
             className="bg-[#0f1117] border border-white/10 text-slate-200 text-xs rounded-full px-2.5 py-1 outline-none focus:ring-1 focus:ring-cyan-400"
           >
-            <option value="">Lọc theo Thiết bị...</option>
+            <option value="">{t('allCameras', language)}</option>
             {availableCameraModels.map((model) => (
               <option key={model} value={model}>
                 {model}
@@ -136,7 +139,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
         <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
         <input
           type="text"
-          placeholder="Lọc tên tệp..."
+          placeholder={t('searchPlaceholder', language)}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="w-full bg-[#0f1117] border border-white/10 rounded-md pl-8 pr-3 py-1 text-xs text-white placeholder-slate-500 outline-none focus:ring-1 focus:ring-cyan-400"
@@ -147,7 +150,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
       <div className="flex items-center gap-3 shrink-0">
         {/* Zoom slider (only in Grid mode) */}
         {viewMode === 'grid' && (
-          <div className="flex items-center gap-1.5 text-slate-400" title={`Kích thước ô: ${zoomSize}px`}>
+          <div className="flex items-center gap-1.5 text-slate-400" title={`Zoom: ${zoomSize}px`}>
             <Sliders className="w-3.5 h-3.5 text-slate-400" />
             <input
               type="range"
@@ -168,7 +171,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
             className={`p-1 rounded transition-colors ${
               viewMode === 'grid' ? 'bg-cyan-500/20 text-cyan-300 font-semibold' : 'text-slate-400 hover:text-white'
             }`}
-            title="Chế độ Lưới (Cmd/Ctrl+1)"
+            title="Cmd/Ctrl+1"
           >
             <LayoutGrid className="w-3.5 h-3.5" />
           </button>
@@ -177,7 +180,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
             className={`p-1 rounded transition-colors ${
               viewMode === 'detail' ? 'bg-cyan-500/20 text-cyan-300 font-semibold' : 'text-slate-400 hover:text-white'
             }`}
-            title="Chế độ Bảng chi tiết (Cmd/Ctrl+2)"
+            title="Cmd/Ctrl+2"
           >
             <List className="w-3.5 h-3.5" />
           </button>
@@ -191,7 +194,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
               ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-sm shadow-cyan-500/20'
               : 'border-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
           }`}
-          title="Thông tin EXIF (Cmd/Ctrl+I)"
+          title="Cmd/Ctrl+I"
         >
           <Info className="w-3.5 h-3.5" />
         </button>

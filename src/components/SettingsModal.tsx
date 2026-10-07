@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Camera, Keyboard, Info, Sliders, ExternalLink, Moon, Sun, Monitor } from 'lucide-react';
+import { t } from '../i18n/translations';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -31,7 +32,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className="h-12 px-5 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Camera className="w-4 h-4 text-cyan-400" />
-            <span className="font-semibold text-white text-sm">Cài đặt & Thông tin VXPhotos</span>
+            <span className="font-semibold text-white text-sm">{t('settingsTitle', language)}</span>
           </div>
           <button
             onClick={onClose}
@@ -52,7 +53,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
-            <span>Cấu hình chung</span>
+            <span>{t('tabGeneral', language)}</span>
           </button>
           <button
             onClick={() => setActiveTab('shortcuts')}
@@ -63,7 +64,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             }`}
           >
             <Keyboard className="w-3.5 h-3.5" />
-            <span>Phím tắt</span>
+            <span>{t('tabShortcuts', language)}</span>
           </button>
           <button
             onClick={() => setActiveTab('about')}
@@ -74,7 +75,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             }`}
           >
             <Info className="w-3.5 h-3.5" />
-            <span>Giới thiệu</span>
+            <span>{t('tabAbout', language)}</span>
           </button>
         </div>
 
@@ -84,21 +85,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="space-y-4 text-slate-300">
               {/* Theme Selection */}
               <div className="bg-[#0f1117] p-3 rounded-lg border border-white/5 space-y-2.5">
-                <span className="font-medium text-white block">Giao diện (Theme)</span>
+                <span className="font-medium text-white block">{t('themeLabel', language)}</span>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { id: 'dark', label: 'Tối chuẩn (Slate)', icon: Moon },
-                    { id: 'black', label: 'OLED Black', icon: Moon },
-                    { id: 'light', label: 'Sáng (Light)', icon: Sun },
-                    { id: 'system', label: 'Theo hệ điều hành', icon: Monitor },
-                  ].map((t) => {
-                    const Icon = t.icon;
-                    const isSelected = theme === t.id;
+                    { id: 'dark', label: t('themeDark', language), icon: Moon },
+                    { id: 'black', label: t('themeBlack', language), icon: Moon },
+                    { id: 'light', label: t('themeLight', language), icon: Sun },
+                    { id: 'system', label: t('themeSystem', language), icon: Monitor },
+                  ].map((tItem) => {
+                    const Icon = tItem.icon;
+                    const isSelected = theme === tItem.id;
                     return (
                       <button
-                        key={t.id}
+                        key={tItem.id}
                         type="button"
-                        onClick={() => onThemeChange(t.id as any)}
+                        onClick={() => onThemeChange(tItem.id as any)}
                         className={`flex items-center gap-2 p-2 rounded-lg border text-xs transition-all text-left ${
                           isSelected
                             ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 font-semibold shadow-sm'
@@ -106,7 +107,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         }`}
                       >
                         <Icon className="w-3.5 h-3.5" />
-                        <span>{t.label}</span>
+                        <span>{tItem.label}</span>
                       </button>
                     );
                   })}
@@ -115,11 +116,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               {/* Language Selection */}
               <div className="bg-[#0f1117] p-3 rounded-lg border border-white/5 space-y-2.5">
-                <span className="font-medium text-white block">Ngôn ngữ (Language)</span>
+                <span className="font-medium text-white block">{t('langLabel', language)}</span>
                 <div className="flex gap-3">
                   {[
-                    { id: 'vi', label: '🇻🇳 Tiếng Việt' },
-                    { id: 'en', label: '🇺🇸 English' },
+                    { id: 'vi', label: t('langVi', language) },
+                    { id: 'en', label: t('langEn', language) },
                   ].map((lang) => {
                     const isSelected = language === lang.id;
                     return (

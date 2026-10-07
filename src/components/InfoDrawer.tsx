@@ -8,14 +8,16 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { FileItem } from '../types';
+import { t, Language } from '../i18n/translations';
 
 interface InfoDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   item: FileItem | null;
+  language?: Language;
 }
 
-export const InfoDrawer: React.FC<InfoDrawerProps> = ({ isOpen, onClose, item }) => {
+export const InfoDrawer: React.FC<InfoDrawerProps> = ({ isOpen, onClose, item, language = 'vi' }) => {
   if (!isOpen) return null;
 
   const formatBytes = (bytes: number) => {
@@ -39,11 +41,11 @@ export const InfoDrawer: React.FC<InfoDrawerProps> = ({ isOpen, onClose, item })
     <aside className="w-72 h-full bg-[#141821]/95 border-l border-white/5 flex flex-col shrink-0 select-none z-30 text-xs backdrop-blur-md animate-in slide-in-from-right duration-150">
       {/* Header */}
       <div className="h-10 px-4 border-b border-white/5 flex items-center justify-between text-slate-200 font-semibold">
-        <span>Thông tin Chi tiết (EXIF)</span>
+        <span>{t('exifInfo', language)}</span>
         <button
           onClick={onClose}
           className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white transition-colors"
-          title="Đóng (Cmd/Ctrl+I)"
+          title="Cmd/Ctrl+I"
         >
           <X className="w-4 h-4" />
         </button>
@@ -55,7 +57,7 @@ export const InfoDrawer: React.FC<InfoDrawerProps> = ({ isOpen, onClose, item })
           <div className="space-y-2">
             <div className="flex items-center gap-1.5 text-cyan-400 font-semibold text-[11px] uppercase tracking-wider">
               <FileText className="w-3.5 h-3.5" />
-              <span>Tệp tin</span>
+              <span>{t('filename', language)}</span>
             </div>
             <div className="bg-[#0f1117] rounded-lg p-2.5 space-y-1.5 border border-white/5 text-slate-300">
               <div className="truncate font-medium text-white" title={item.filename}>

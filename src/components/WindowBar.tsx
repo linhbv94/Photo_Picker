@@ -8,6 +8,7 @@ import {
   X,
   Camera,
 } from 'lucide-react';
+import { t, Language } from '../i18n/translations';
 
 interface WindowBarProps {
   onOpenFolder: () => void;
@@ -19,7 +20,7 @@ interface WindowBarProps {
   onToggleSidebar: () => void;
   onToggleInfo: () => void;
   onSwitchView: (mode: 'grid' | 'detail') => void;
-  currentFolder?: string;
+  language?: Language;
 }
 
 export const WindowBar: React.FC<WindowBarProps> = ({
@@ -32,6 +33,7 @@ export const WindowBar: React.FC<WindowBarProps> = ({
   onToggleSidebar,
   onToggleInfo,
   onSwitchView,
+  language = 'vi',
 }) => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -69,26 +71,26 @@ export const WindowBar: React.FC<WindowBarProps> = ({
     (/Mac|iPod|iPhone|iPad/.test(navigator.platform) || /Macintosh/.test(navigator.userAgent));
 
   const menus: Record<string, Array<{ label: string; shortcut?: string; action: () => void }>> = {
-    File: [
-      { label: 'Mở Thư mục...', shortcut: 'Cmd/Ctrl+O', action: onOpenFolder },
-      { label: 'Cài đặt...', shortcut: 'Cmd/Ctrl+,', action: onOpenSettings },
+    [t('file', language)]: [
+      { label: t('openFolder', language), shortcut: 'Cmd/Ctrl+O', action: onOpenFolder },
+      { label: t('settings', language), shortcut: 'Cmd/Ctrl+,', action: onOpenSettings },
     ],
-    Edit: [
-      { label: 'Chọn Tất cả', shortcut: 'Cmd/Ctrl+A', action: onSelectAll },
-      { label: 'Hủy chọn Toàn bộ', shortcut: 'Esc', action: onUnmarkAll },
+    [t('edit', language)]: [
+      { label: t('selectAll', language), shortcut: 'Cmd/Ctrl+A', action: onSelectAll },
+      { label: t('deselectAll', language), shortcut: 'Esc', action: onUnmarkAll },
     ],
-    View: [
-      { label: 'Chế độ Lưới (Grid)', shortcut: 'Cmd/Ctrl+1', action: () => onSwitchView('grid') },
-      { label: 'Chế độ Bảng (Detail)', shortcut: 'Cmd/Ctrl+2', action: () => onSwitchView('detail') },
-      { label: 'Bật/Tắt Cây thư mục', shortcut: 'Cmd/Ctrl+B', action: onToggleSidebar },
-      { label: 'Bật/Tắt Thông tin EXIF', shortcut: 'Cmd/Ctrl+I', action: onToggleInfo },
+    [t('view', language)]: [
+      { label: `${t('viewGrid', language)}`, shortcut: 'Cmd/Ctrl+1', action: () => onSwitchView('grid') },
+      { label: `${t('viewDetail', language)}`, shortcut: 'Cmd/Ctrl+2', action: () => onSwitchView('detail') },
+      { label: t('toggleSidebar', language), shortcut: 'Cmd/Ctrl+B', action: onToggleSidebar },
+      { label: t('toggleInfoPanel', language), shortcut: 'Cmd/Ctrl+I', action: onToggleInfo },
     ],
     Tools: [
-      { label: 'Xoay 90° cùng chiều kim đồng hồ', shortcut: 'R', action: onRotateCurrent },
-      { label: 'Đổi tên hàng loạt...', shortcut: 'Cmd/Ctrl+R', action: onRenameCurrent },
+      { label: t('losslessRotate90', language), shortcut: 'R', action: onRotateCurrent },
+      { label: t('batchRename', language), shortcut: 'Cmd/Ctrl+R', action: onRenameCurrent },
     ],
-    Help: [
-      { label: 'Giới thiệu VXPhotos', action: onOpenSettings },
+    [t('help', language)]: [
+      { label: t('about', language), action: onOpenSettings },
     ],
   };
 
