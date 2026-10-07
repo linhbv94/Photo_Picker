@@ -1,3 +1,5 @@
+import { AppUpdates } from './AppUpdates';
+import { appVersion } from '../services/app_updater';
 import React, { useState } from 'react';
 import { X, Camera, Keyboard, Info, Sliders, ExternalLink, Moon, Sun, Monitor } from 'lucide-react';
 import { t, Language } from '../i18n/translations';
@@ -224,8 +226,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">VXPhotos Desktop</h3>
-                <span className="text-xs text-slate-500 dark:text-slate-400">{t('aboutVersion', language)}</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">v{appVersion}</span>
               </div>
+
+              <AppUpdates language={language} />
 
               <p className="text-slate-600 dark:text-slate-400 text-xs max-w-sm mx-auto leading-relaxed">
                 {t('aboutDesc', language)}

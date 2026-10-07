@@ -1,3 +1,4 @@
+import { AppUpdates } from './components/AppUpdates';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   FileItem,
@@ -876,6 +877,7 @@ export const App: React.FC = () => {
       />
 
       <Toast toast={toast} onClose={() => setToast(null)} />
+      <AppUpdates language={language} notice />
     </div>
   );
 };
