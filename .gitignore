@@ -16,3 +16,8 @@ target/
 
 # Logs
 *.log
+
+# Private updater signing keys (never commit)
+.release_keys/
+*.key
+*.key.pub
