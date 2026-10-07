@@ -9,6 +9,8 @@ import {
 import { SubfolderItem } from '../types';
 import { t, Language } from '../i18n/translations';
 
+const DRAG_MIME = 'application/x-photo_picker_paths';
+
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
@@ -52,7 +54,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  const isInternalDrag = (e: React.DragEvent) => {
+    const types = Array.from(e.dataTransfer.types || []);
+    return types.includes(DRAG_MIME) || types.includes('text/plain');
+  };
+
   const handleFolderDragOver = (e: React.DragEvent, folderId: string) => {
+    if (!isInternalDrag(e)) return;
     e.preventDefault();
     e.stopPropagation();
     try {
@@ -64,6 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const handleFolderDragEnter = (e: React.DragEvent, folderId: string) => {
+    if (!isInternalDrag(e)) return;
     e.preventDefault();
     e.stopPropagation();
     try {
@@ -72,33 +81,48 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setDragOverFolderId(folderId);
   };
 
-  const handleContainerDragLeave = (e: React.DragEvent) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    // Only reset if pointer actually left the container boundary
-    if (
-      e.clientX <= rect.left ||
-      e.clientX >= rect.right ||
-      e.clientY <= rect.top ||
-      e.clientY >= rect.bottom
-    ) {
-      setDragOverFolderId(null);
+  const handleFolderDragLeave = (e: React.DragEvent<HTMLDivElement>, folderId: string) => {
+    const nextTarget = e.relatedTarget as Node | null;
+    if (nextTarget && e.currentTarget.contains(nextTarget)) {
+      return;
     }
+    if (nextTarget === null) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      if (
+        e.clientX >= rect.left &&
+        e.clientX < rect.right &&
+        e.clientY >= rect.top &&
+        e.clientY < rect.bottom
+      ) {
+        return;
+      }
+    }
+    setDragOverFolderId((current) => (current === folderId ? null : current));
   };
 
-  const handleDrop = (e: React.DragEvent, folderPath: string) => {
+  const handleFolderDrop = (e: React.DragEvent, folderPath: string) => {
+    setDragOverFolderId(null);
+    if (!isInternalDrag(e)) return;
+
     e.preventDefault();
     e.stopPropagation();
-    setDragOverFolderId(null);
+
     let droppedPaths: string[] | undefined;
     try {
-      const raw = e.dataTransfer.getData('text/plain');
+      const raw = e.dataTransfer.getData(DRAG_MIME) || e.dataTransfer.getData('text/plain');
       if (raw) {
-        droppedPaths = JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          droppedPaths = [...new Set(parsed.filter((p): p is string => typeof p === 'string' && p.trim().length > 0))];
+        }
       }
     } catch {
       // Fallback
     }
-    onDropFiles(folderPath, droppedPaths);
+
+    if (droppedPaths && droppedPaths.length > 0) {
+      onDropFiles(folderPath, droppedPaths);
+    }
   };
 
   if (!isOpen) {
@@ -114,21 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }
 
   return (
-    <aside
-      className="w-56 h-full bg-[#141821]/95 border-r border-white/5 flex flex-col shrink-0 select-none z-20"
-      onDragOver={(e) => {
-        e.preventDefault();
-        try {
-          e.dataTransfer.dropEffect = 'move';
-        } catch {}
-      }}
-      onDragEnter={(e) => {
-        e.preventDefault();
-        try {
-          e.dataTransfer.dropEffect = 'move';
-        } catch {}
-      }}
-    >
+    <aside className="w-56 h-full bg-[#141821]/95 border-r border-white/5 flex flex-col shrink-0 select-none z-20">
       {/* Header */}
       <div className="h-10 px-3 border-b border-white/5 flex items-center justify-between text-xs font-medium text-slate-300">
         <div className="flex items-center gap-2 truncate">
@@ -158,16 +168,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Subfolder list */}
-      <div
-        className="flex-1 overflow-y-auto px-1.5 py-2 space-y-1"
-        onDragOver={(e) => {
-          e.preventDefault();
-          try {
-            e.dataTransfer.dropEffect = 'move';
-          } catch {}
-        }}
-        onDragLeave={handleContainerDragLeave}
-      >
+      <div className="flex-1 overflow-y-auto px-1.5 py-2 space-y-1">
         <div className="px-2 py-1 text-[10px] font-semibold tracking-wider text-slate-500 uppercase pointer-events-none">
           {t('subfolders', language)} ({subfolders.length})
         </div>
@@ -212,7 +213,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               key={folder.id}
               onDragOver={(e) => handleFolderDragOver(e, folder.id)}
               onDragEnter={(e) => handleFolderDragEnter(e, folder.id)}
-              onDrop={(e) => handleDrop(e, folder.id)}
+              onDragLeave={(e) => handleFolderDragLeave(e, folder.id)}
+              onDrop={(e) => handleFolderDrop(e, folder.id)}
               onContextMenu={(e) => onFolderContextMenu(e, folder)}
               className={`group flex items-center justify-between px-2.5 py-2 rounded-lg transition-all cursor-pointer ${
                 isDragOver

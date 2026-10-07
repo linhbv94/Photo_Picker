@@ -353,6 +353,7 @@ export const tauriApi = {
         });
       } catch (e) {
         console.warn('Tauri moveOrCopyFiles failed:', e);
+        throw e;
       }
     }
     return { success_count: sourcePaths.length, failed_paths: [] };

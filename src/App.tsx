@@ -424,22 +424,31 @@ export const App: React.FC = () => {
 
   // Drag and drop into sidebar
   const handleDragStart = (e: React.DragEvent, item: FileItem) => {
-    const targets = markedIds.has(item.id) ? Array.from(markedIds) : [item.id];
-    e.dataTransfer.setData('text/plain', JSON.stringify(targets));
-    try {
-      e.dataTransfer.effectAllowed = 'move';
-    } catch {}
+    const targetPaths = markedIds.has(item.id)
+      ? files.filter((f) => markedIds.has(f.id)).map((f) => f.path)
+      : [item.path];
 
-    // Custom drag ghost using pure transparent Canvas (no DOM bounding box shadow artifacts)
+    const uniquePaths = [...new Set(targetPaths)];
+    if (uniquePaths.length === 0) {
+      e.preventDefault();
+      return;
+    }
+
+    const payload = JSON.stringify(uniquePaths);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('application/x-photo_picker_paths', payload);
+    e.dataTransfer.setData('text/plain', payload);
+
+    // Super compact mini pill canvas (20px height)
     try {
-      const count = targets.length;
+      const count = uniquePaths.length;
       const text = `${count} ảnh`;
-      const width = Math.max(90, 44 + text.length * 8);
-      const height = 30;
+      const width = Math.max(52, 26 + text.length * 6);
+      const height = 20;
 
       const canvas = document.createElement('canvas');
-      canvas.width = width * 2;
-      canvas.height = height * 2;
+      canvas.width = width;
+      canvas.height = height;
       canvas.style.position = 'fixed';
       canvas.style.top = '-9999px';
       canvas.style.left = '-9999px';
@@ -447,30 +456,26 @@ export const App: React.FC = () => {
 
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.scale(2, 2);
         ctx.clearRect(0, 0, width, height);
 
-        // Draw pill background
-        const radius = height / 2;
+        // Draw super mini pill
         ctx.beginPath();
-        ctx.roundRect(1.5, 1.5, width - 3, height - 3, radius);
+        ctx.roundRect(1, 1, width - 2, height - 2, height / 2);
         ctx.fillStyle = '#06b6d4';
         ctx.fill();
 
-        // Draw crisp solid white border
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1.5;
         ctx.strokeStyle = '#ffffff';
         ctx.stroke();
 
-        // Draw text
         ctx.fillStyle = '#000000';
-        ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(`⚡ ${text}`, width / 2, height / 2);
+        ctx.fillText(text, width / 2, height / 2);
 
         document.body.appendChild(canvas);
-        e.dataTransfer.setDragImage(canvas, (width * 2) / 2, (height * 2) / 2);
+        e.dataTransfer.setDragImage(canvas, width / 2, height / 2);
         setTimeout(() => {
           if (canvas.parentNode) {
             canvas.parentNode.removeChild(canvas);
