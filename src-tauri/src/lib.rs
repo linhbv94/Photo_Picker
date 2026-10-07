@@ -21,5 +21,5 @@ pub fn run() {
             move_to_trash,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running VXTriage application");
+        .expect("error while running VXPhotos application");
 }

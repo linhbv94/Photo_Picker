@@ -1,3 +1,4 @@
+import { convertFileSrc } from '@tauri-apps/api/core';
 import { FileItem, SubfolderItem, RenameDiffItem, ExifMetadata } from '../types';
 
 export interface ReadDirectoryResult {
@@ -425,12 +426,10 @@ export const tauriApi = {
   toAssetUrl(filePath: string, bustToken?: number): string {
     if (isTauriEnvironment()) {
       try {
-        const cleanPath = filePath.replace(/\\/g, '/');
-        const encoded = encodeURI(cleanPath);
-        const base = `http://asset.localhost/${encoded.startsWith('/') ? encoded.slice(1) : encoded}`;
-        return bustToken ? `${base}?v=${bustToken}` : base;
+        const url = convertFileSrc(filePath);
+        return bustToken ? `${url}?t=${bustToken}` : url;
       } catch (e) {
-        console.warn('toAssetUrl failed:', e);
+        console.warn('convertFileSrc failed:', e);
       }
     }
     return `https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&auto=format&fit=crop&q=80`;

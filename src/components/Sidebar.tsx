@@ -136,28 +136,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* New Folder Action Footer */}
       <div className="p-2 border-t border-white/5 bg-black/20">
         {isCreating ? (
-          <form onSubmit={handleCreateSubmit} className="flex items-center gap-1">
+          <form onSubmit={handleCreateSubmit} className="flex flex-col gap-1.5 w-full">
             <input
               type="text"
               autoFocus
               placeholder="Tên thư mục mới..."
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
-              className="flex-1 bg-[#0f1117] border border-cyan-500/50 rounded px-2 py-1 text-xs text-white outline-none focus:ring-1 focus:ring-cyan-400"
+              className="w-full min-w-0 bg-[#0f1117] border border-cyan-500/50 rounded px-2 py-1 text-xs text-white outline-none focus:ring-1 focus:ring-cyan-400"
             />
-            <button
-              type="submit"
-              className="px-2 py-1 bg-cyan-500 hover:bg-cyan-400 text-black font-semibold rounded text-xs transition-colors"
-            >
-              Lưu
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsCreating(false)}
-              className="px-1.5 py-1 text-slate-400 hover:text-white text-xs"
-            >
-              Hủy
-            </button>
+            <div className="flex items-center justify-end gap-1.5">
+              <button
+                type="button"
+                onClick={() => setIsCreating(false)}
+                className="px-2 py-0.5 text-slate-400 hover:text-white text-xs rounded hover:bg-white/5 transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={!newFolderName.trim()}
+                className="px-2.5 py-0.5 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black font-semibold rounded text-xs transition-colors"
+              >
+                Lưu
+              </button>
+            </div>
           </form>
         ) : (
           <button

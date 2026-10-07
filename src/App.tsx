@@ -34,6 +34,30 @@ export const App: React.FC = () => {
   const [markedIds, setMarkedIds] = useState<Set<string>>(new Set());
   const [lastMarkedAnchorId, setLastMarkedAnchorId] = useState<string | null>(null);
 
+  // Theme & Language
+  const [theme, setTheme] = useState<'system' | 'dark' | 'light' | 'black'>(() => {
+    return (localStorage.getItem('vxphotos_theme') as any) || 'dark';
+  });
+  const [language, setLanguage] = useState<'vi' | 'en'>(() => {
+    return (localStorage.getItem('vxphotos_lang') as any) || 'vi';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('vxphotos_theme', theme);
+    const root = document.documentElement;
+    if (theme === 'light') {
+      root.classList.add('light-theme');
+      root.classList.remove('dark');
+    } else {
+      root.classList.remove('light-theme');
+      root.classList.add('dark');
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('vxphotos_lang', language);
+  }, [language]);
+
   // View & Filter States
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
@@ -218,9 +242,10 @@ export const App: React.FC = () => {
 
   // 4. Selection & Range Marking Logic
   const handleItemClick = (item: FileItem, e: React.MouseEvent) => {
-    if (e.shiftKey && lastMarkedAnchorId) {
+    const anchor = lastMarkedAnchorId || selectedId;
+    if (e.shiftKey && anchor) {
       // Range Marking from last anchor to clicked item
-      const anchorIdx = visibleItems.findIndex((i) => i.id === lastMarkedAnchorId);
+      const anchorIdx = visibleItems.findIndex((i) => i.id === anchor);
       const targetIdx = visibleItems.findIndex((i) => i.id === item.id);
 
       if (anchorIdx !== -1 && targetIdx !== -1) {
@@ -234,6 +259,8 @@ export const App: React.FC = () => {
           return next;
         });
       }
+    } else {
+      setLastMarkedAnchorId(item.id);
     }
 
     // Set Focus Cursor
@@ -242,16 +269,38 @@ export const App: React.FC = () => {
 
   const handleToggleMark = (item: FileItem, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    const anchor = lastMarkedAnchorId || selectedId;
+
+    if (e?.shiftKey && anchor) {
+      // Range Marking on thumbnail click with Shift
+      const anchorIdx = visibleItems.findIndex((i) => i.id === anchor);
+      const targetIdx = visibleItems.findIndex((i) => i.id === item.id);
+
+      if (anchorIdx !== -1 && targetIdx !== -1) {
+        const start = Math.min(anchorIdx, targetIdx);
+        const end = Math.max(anchorIdx, targetIdx);
+        const range = visibleItems.slice(start, end + 1).map((i) => i.id);
+
+        setMarkedIds((prev) => {
+          const next = new Set(prev);
+          for (const id of range) next.add(id);
+          return next;
+        });
+        setSelectedId(item.id);
+        return;
+      }
+    }
+
     setMarkedIds((prev) => {
       const next = new Set(prev);
       if (next.has(item.id)) {
         next.delete(item.id);
       } else {
         next.add(item.id);
-        setLastMarkedAnchorId(item.id);
       }
       return next;
     });
+    setLastMarkedAnchorId(item.id);
     setSelectedId(item.id);
   };
 
@@ -374,7 +423,19 @@ export const App: React.FC = () => {
         return;
       }
 
-      if (e.key === ' ') {
+      if (e.key === 'Escape') {
+        if (isPreviewOpen) {
+          e.preventDefault();
+          setIsPreviewOpen(false);
+        } else if (isInfoOpen) {
+          e.preventDefault();
+          setIsInfoOpen(false);
+        } else if (markedIds.size > 0) {
+          e.preventDefault();
+          handleUnmarkAll();
+          showToast('info', 'Đã hủy chọn toàn bộ ảnh');
+        }
+      } else if (e.key === ' ') {
         e.preventDefault();
         setIsPreviewOpen((prev) => !prev);
       } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
@@ -389,7 +450,7 @@ export const App: React.FC = () => {
           const prevIdx = Math.max(currentFocusedIndex - 1, 0);
           setSelectedId(visibleItems[prevIdx].id);
         }
-      } else if (e.key === 'm' || e.key === 'M' || e.key === '1') {
+      } else if (e.key === 'x' || e.key === 'X' || e.key === 'm' || e.key === 'M' || e.key === '1') {
         if (currentFocusedItem) {
           e.preventDefault();
           handleToggleMark(currentFocusedItem);
@@ -400,8 +461,13 @@ export const App: React.FC = () => {
           handleItemDoubleClick(currentFocusedItem);
         }
       } else if (e.key === 'r' || e.key === 'R') {
-        e.preventDefault();
-        handleRotate(90);
+        if (e.metaKey || e.ctrlKey) {
+          e.preventDefault();
+          handleOpenBatchRename();
+        } else {
+          e.preventDefault();
+          handleRotate(90);
+        }
       } else if (e.key === 'F2') {
         e.preventDefault();
         handleOpenBatchRename();
@@ -431,7 +497,7 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [visibleItems, currentFocusedIndex, currentFocusedItem, isRenameModalOpen, isSettingsOpen]);
+  }, [visibleItems, currentFocusedIndex, currentFocusedItem, isRenameModalOpen, isSettingsOpen, isPreviewOpen, isInfoOpen, markedIds.size]);
 
   // Context Menu Helpers
   const handleItemContextMenu = (e: React.MouseEvent, item: FileItem) => {
@@ -587,6 +653,7 @@ export const App: React.FC = () => {
         currentIndex={currentFocusedIndex}
         totalCount={visibleItems.length}
         isMarked={Boolean(selectedId && markedIds.has(selectedId))}
+        cacheBust={cacheBust}
         onClose={() => setIsPreviewOpen(false)}
         onNext={() => {
           if (visibleItems.length > 0) {
@@ -620,6 +687,10 @@ export const App: React.FC = () => {
           setCacheBust(Date.now());
           showToast('success', 'Đã làm mới bộ nhớ đệm');
         }}
+        theme={theme}
+        onThemeChange={setTheme}
+        language={language}
+        onLanguageChange={setLanguage}
       />
 
       <ContextMenu

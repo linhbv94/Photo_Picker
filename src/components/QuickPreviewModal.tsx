@@ -16,6 +16,7 @@ interface QuickPreviewModalProps {
   currentIndex: number;
   totalCount: number;
   isMarked: boolean;
+  cacheBust?: number;
   onClose: () => void;
   onNext: () => void;
   onPrev: () => void;
@@ -30,6 +31,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
   currentIndex,
   totalCount,
   isMarked,
+  cacheBust,
   onClose,
   onNext,
   onPrev,
@@ -37,6 +39,9 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
   onRotate,
   onOpenSystemViewer,
 }) => {
+  const isMac =
+    typeof navigator !== 'undefined' &&
+    (/Mac|iPod|iPhone|iPad/.test(navigator.platform) || /Macintosh/.test(navigator.userAgent));
   useEffect(() => {
     if (!isOpen) return;
 
@@ -71,7 +76,11 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black/90 backdrop-blur-xl animate-in fade-in duration-150 select-none">
       {/* Top Bar */}
-      <div className="h-11 px-4 flex items-center justify-between border-b border-white/10 text-xs text-slate-300">
+      <div
+        className={`h-11 ${
+          isMac ? 'pl-20 pr-4' : 'px-4'
+        } flex items-center justify-between border-b border-white/10 text-xs text-slate-300`}
+      >
         <div className="flex items-center gap-2 truncate">
           <span className="font-semibold text-white truncate max-w-md">{item.filename}</span>
           <span className="text-slate-500">
@@ -110,7 +119,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
         </button>
 
         <img
-          src={tauriApi.toAssetUrl(item.path)}
+          src={tauriApi.toAssetUrl(item.path, cacheBust)}
           alt={item.filename}
           className="max-h-full max-w-full object-contain rounded shadow-2xl drop-shadow-2xl"
         />

@@ -1,7 +1,7 @@
 [package]
 name = "photo_picker"
 version = "1.0.0"
-description = "VXTriage — Lightweight Photo Picker & Media Triage Utility"
+description = "VXPhotos — Lightweight Photo Picker & Media Triage Utility"
 authors = ["vic"]
 edition = "2021"
 

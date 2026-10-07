@@ -56,10 +56,9 @@ export const GridView: React.FC<GridViewProps> = ({
               key={item.id}
               draggable
               onDragStart={(e) => onDragStart(e, item)}
-              onClick={(e) => onItemClick(item, e)}
               onDoubleClick={() => onItemDoubleClick(item)}
               onContextMenu={(e) => onItemContextMenu(e, item)}
-              className={`group relative flex flex-col rounded-lg overflow-hidden transition-all duration-100 cursor-pointer border ${
+              className={`group relative flex flex-col rounded-lg overflow-hidden transition-all duration-100 border ${
                 isSelected
                   ? 'ring-2 ring-cyan-400 border-cyan-400 shadow-lg shadow-cyan-500/20 z-10'
                   : isMarked
@@ -67,47 +66,58 @@ export const GridView: React.FC<GridViewProps> = ({
                   : 'border-white/5 bg-[#141821]/70 hover:border-white/20 hover:bg-[#141821]'
               }`}
             >
-              {/* Thumbnail Container */}
+              {/* Thumbnail Container (Click = Mark / Unmark) */}
               <div
-                className="relative w-full overflow-hidden bg-black/40 flex items-center justify-center"
+                onClick={(e) => onToggleMark(item, e)}
+                className="relative w-full overflow-hidden bg-black/40 flex items-center justify-center cursor-pointer select-none"
                 style={{ height: `${zoomSize * 0.85}px` }}
+                title={isMarked ? 'Bỏ đánh dấu ảnh này' : 'Đánh dấu chọn ảnh này (Click / Phím X)'}
               >
                 <img
                   src={`${tauriApi.toAssetUrl(item.path)}?t=${cacheBust}`}
                   alt={item.filename}
                   loading="lazy"
                   className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
-                  onError={(e) => {
-                    // Fallback to placeholder if asset fails
-                    (e.currentTarget as HTMLElement).style.display = 'none';
-                  }}
                 />
 
-                {/* Mark Checkbox (Top Left) */}
-                <button
-                  type="button"
-                  onClick={(e) => onToggleMark(item, e)}
-                  className={`absolute top-2 left-2 w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                {/* Big Center Tick Badge */}
+                <div
+                  className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-all duration-150 ${
                     isMarked
-                      ? 'bg-amber-400 text-black shadow-md shadow-amber-500/40 opacity-100'
-                      : 'bg-black/60 text-white border border-white/20 opacity-0 group-hover:opacity-100 hover:scale-110'
+                      ? 'bg-amber-500/20'
+                      : 'bg-black/0 group-hover:bg-black/30'
                   }`}
-                  title={isMarked ? 'Bỏ đánh dấu (M)' : 'Đánh dấu (M)'}
                 >
-                  <Check className="w-3.5 h-3.5 stroke-[3]" />
-                </button>
+                  <div
+                    className={`rounded-full flex items-center justify-center transition-all duration-150 shadow-xl ${
+                      isMarked
+                        ? 'w-11 h-11 bg-amber-400 text-black shadow-amber-500/50 scale-100 ring-2 ring-amber-300'
+                        : 'w-10 h-10 bg-black/60 border border-white/30 text-white/50 opacity-0 group-hover:opacity-75 group-hover:scale-105'
+                    }`}
+                  >
+                    <Check className={`${isMarked ? 'w-6 h-6 stroke-[3.5]' : 'w-5 h-5 stroke-[2.5]'}`} />
+                  </div>
+                </div>
 
                 {/* Camera Badge (Top Right) */}
                 {cameraInfo && (
-                  <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[10px] text-cyan-300 border border-cyan-500/30 font-medium">
+                  <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[10px] text-cyan-300 border border-cyan-500/30 font-medium z-10 pointer-events-none">
                     <Camera className="w-2.5 h-2.5" />
                     <span className="truncate max-w-[80px]">{cameraInfo}</span>
                   </div>
                 )}
               </div>
 
-              {/* Card Footer: Metadata */}
-              <div className="p-2 flex flex-col gap-0.5 bg-[#141821]/95 text-left">
+              {/* Card Footer: Metadata (Click = Select / Focus) */}
+              <div
+                onClick={(e) => onItemClick(item, e)}
+                className={`p-2 flex flex-col gap-0.5 text-left transition-colors cursor-pointer border-t select-none ${
+                  isSelected
+                    ? 'bg-cyan-500/15 border-cyan-400/40'
+                    : 'bg-[#141821]/95 border-white/5 hover:bg-[#181d28]'
+                }`}
+                title="Bấm để chọn tiêu điểm (Focus)"
+              >
                 <span className="text-xs font-medium text-slate-200 truncate" title={item.filename}>
                   {item.filename}
                 </span>

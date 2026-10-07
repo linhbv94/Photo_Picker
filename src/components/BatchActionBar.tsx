@@ -74,13 +74,14 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
 
       <div className="h-4 w-px bg-white/10 mx-1" />
 
-      {/* Unmark Button */}
+      {/* Unmark All Button */}
       <button
         onClick={onUnmarkAll}
-        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-        title="Bỏ đánh dấu toàn bộ (Cmd/Ctrl+Alt+U)"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 hover:text-red-200 border border-red-500/30 transition-all font-medium active:scale-95"
+        title="Hủy đánh dấu toàn bộ (Phím Esc)"
       >
-        <X className="w-4 h-4" />
+        <X className="w-3.5 h-3.5" />
+        <span>Hủy chọn tất cả (Esc)</span>
       </button>
     </div>
   );
