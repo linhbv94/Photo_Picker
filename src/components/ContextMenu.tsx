@@ -95,6 +95,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
   const effectiveCount = state.isMarkedTarget ? markedCount : 1;
 
+  const isMac =
+    typeof navigator !== 'undefined' &&
+    (/Mac|iPod|iPhone|iPad/.test(navigator.platform) || /Macintosh/.test(navigator.userAgent));
+  const revealLabel = isMac ? 'Hiện trong Finder' : 'Hiện trong File Explorer';
+
   return (
     <div
       ref={menuRef}
@@ -251,8 +256,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             }}
             className="w-full text-left px-3 py-1.5 flex items-center gap-2 hover:bg-cyan-500/20 hover:text-cyan-200 transition-colors"
           >
-            <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-            <span>Mở trong Finder / Explorer</span>
+            <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+            <span>{revealLabel}</span>
           </button>
 
           <div className="h-px bg-white/10 my-1" />
@@ -285,6 +290,19 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
           <button
             onClick={() => {
+              onRevealInFinder();
+              onClose();
+            }}
+            className="w-full text-left px-3 py-1.5 flex items-center gap-2 hover:bg-cyan-500/20 hover:text-cyan-200 transition-colors"
+          >
+            <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+            <span>{revealLabel}</span>
+          </button>
+
+          <div className="h-px bg-white/10 my-1" />
+
+          <button
+            onClick={() => {
               onCreateSubfolder();
               onClose();
             }}
@@ -306,19 +324,6 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
               <span>Chuyển {markedCount} ảnh đang chọn vào đây</span>
             </button>
           )}
-
-          <div className="h-px bg-white/10 my-1" />
-
-          <button
-            onClick={() => {
-              onRevealInFinder();
-              onClose();
-            }}
-            className="w-full text-left px-3 py-1.5 flex items-center gap-2 hover:bg-cyan-500/20 hover:text-cyan-200 transition-colors"
-          >
-            <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-            <span>Mở trong Finder / Explorer</span>
-          </button>
         </>
       )}
 

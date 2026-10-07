@@ -430,43 +430,53 @@ export const App: React.FC = () => {
       e.dataTransfer.effectAllowed = 'move';
     } catch {}
 
-    // Custom compact pill drag badge showing dragging count
+    // Custom drag ghost using pure transparent Canvas (no DOM bounding box shadow artifacts)
     try {
-      const ghost = document.createElement('div');
-      ghost.style.position = 'fixed';
-      ghost.style.top = '-9999px';
-      ghost.style.left = '-9999px';
-      ghost.style.padding = '6px 12px';
-      ghost.style.borderRadius = '9999px';
-      ghost.style.backgroundColor = '#06b6d4';
-      ghost.style.color = '#000000';
-      ghost.style.fontWeight = '700';
-      ghost.style.fontSize = '12px';
-      ghost.style.lineHeight = '1';
-      ghost.style.display = 'flex';
-      ghost.style.alignItems = 'center';
-      ghost.style.gap = '6px';
-      ghost.style.boxShadow = '0 8px 20px rgba(6, 182, 212, 0.5), 0 2px 4px rgba(0,0,0,0.4)';
-      ghost.style.border = '2px solid #ffffff';
-      ghost.style.zIndex = '99999';
-      ghost.style.pointerEvents = 'none';
+      const count = targets.length;
+      const text = `${count} ảnh`;
+      const width = Math.max(90, 44 + text.length * 8);
+      const height = 30;
 
-      ghost.innerHTML = `
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
-          <circle cx="9" cy="9" r="2"/>
-          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
-        </svg>
-        <span>${targets.length} ảnh</span>
-      `;
+      const canvas = document.createElement('canvas');
+      canvas.width = width * 2;
+      canvas.height = height * 2;
+      canvas.style.position = 'fixed';
+      canvas.style.top = '-9999px';
+      canvas.style.left = '-9999px';
+      canvas.style.pointerEvents = 'none';
 
-      document.body.appendChild(ghost);
-      e.dataTransfer.setDragImage(ghost, 20, 14);
-      setTimeout(() => {
-        if (ghost.parentNode) {
-          ghost.parentNode.removeChild(ghost);
-        }
-      }, 0);
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.scale(2, 2);
+        ctx.clearRect(0, 0, width, height);
+
+        // Draw pill background
+        const radius = height / 2;
+        ctx.beginPath();
+        ctx.roundRect(1.5, 1.5, width - 3, height - 3, radius);
+        ctx.fillStyle = '#06b6d4';
+        ctx.fill();
+
+        // Draw crisp solid white border
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+
+        // Draw text
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`⚡ ${text}`, width / 2, height / 2);
+
+        document.body.appendChild(canvas);
+        e.dataTransfer.setDragImage(canvas, (width * 2) / 2, (height * 2) / 2);
+        setTimeout(() => {
+          if (canvas.parentNode) {
+            canvas.parentNode.removeChild(canvas);
+          }
+        }, 0);
+      }
     } catch {}
   };
 
