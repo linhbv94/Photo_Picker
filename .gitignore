@@ -1,0 +1,18 @@
+# OS files
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Node / Frontend
+node_modules/
+dist/
+build/
+.env
+.env.local
+
+# Rust / Tauri
+src-tauri/target/
+target/
+
+# Logs
+*.log
