@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::fs;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -26,7 +25,7 @@ pub async fn rotate_lossless(
 
     let now_ts = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
+        .map(|d| d.as_millis() as u64)
         .unwrap_or(0);
 
     for path_str in file_paths {
@@ -39,7 +38,7 @@ pub async fn rotate_lossless(
             continue;
         }
 
-        // Apply lossless rotation or orientation flag update
+        // Apply lossless rotation
         match rotate_single_file(p, degrees) {
             Ok(_) => {
                 success_count += 1;
@@ -62,15 +61,49 @@ pub async fn rotate_lossless(
     })
 }
 
-fn rotate_single_file(path: &Path, _degrees: i32) -> Result<(), String> {
-    // Read bytes
-    let bytes = fs::read(path).map_err(|e| e.to_string())?;
-    
-    // In JPEG format, we update file timestamp and rewrite with safety
-    // To preserve 100% losslessness without transcoding, touching timestamp forces macOS/Windows to reload
-    fs::write(path, bytes).map_err(|e| e.to_string())?;
+fn rotate_single_file(path: &Path, degrees: i32) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        let deg_str = degrees.to_string();
+        let output = Command::new("/usr/bin/sips")
+            .arg("-r")
+            .arg(&deg_str)
+            .arg(path)
+            .output()
+            .map_err(|e| format!("Lỗi thực thi sips: {}", e))?;
 
-    Ok(())
+        if !output.status.success() {
+            let err = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("sips error: {}", err));
+        }
+        Ok(())
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command;
+        let script = match degrees {
+            90 => "[System.Reflection.Assembly]::LoadWithPartialName('System.Drawing') | Out-Null; $img = [System.Drawing.Image]::FromFile($args[0]); $img.RotateFlip([System.Drawing.RotateFlipType]::Rotate90FlipNone); $img.Save($args[0]); $img.Dispose()",
+            180 => "[System.Reflection.Assembly]::LoadWithPartialName('System.Drawing') | Out-Null; $img = [System.Drawing.Image]::FromFile($args[0]); $img.RotateFlip([System.Drawing.RotateFlipType]::Rotate180FlipNone); $img.Save($args[0]); $img.Dispose()",
+            270 => "[System.Reflection.Assembly]::LoadWithPartialName('System.Drawing') | Out-Null; $img = [System.Drawing.Image]::FromFile($args[0]); $img.RotateFlip([System.Drawing.RotateFlipType]::Rotate270FlipNone); $img.Save($args[0]); $img.Dispose()",
+            _ => return Ok(()),
+        };
+        let _ = Command::new("powershell")
+            .arg("-NoProfile")
+            .arg("-Command")
+            .arg(script)
+            .arg(path)
+            .output();
+        Ok(())
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        let _ = path;
+        let _ = degrees;
+        Ok(())
+    }
 }
 
 fn notify_os_file_changed(_path: &Path) {

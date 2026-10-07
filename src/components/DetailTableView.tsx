@@ -131,7 +131,8 @@ export const DetailTableView: React.FC<DetailTableViewProps> = ({
                     <img
                       src={tauriApi.toAssetUrl(item.path)}
                       alt=""
-                      className="w-full h-full object-cover"
+                      draggable={false}
+                      className="w-full h-full object-cover pointer-events-none"
                       loading="lazy"
                     />
                   </div>

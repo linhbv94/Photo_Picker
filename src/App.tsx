@@ -378,16 +378,30 @@ export const App: React.FC = () => {
   };
 
   // 8. Move / Copy Files to Subfolder
-  const handleMoveFiles = async (destFolder: string, actionType: 'MOVE' | 'COPY' = 'MOVE') => {
-    const targets = markedIds.size > 0
-      ? Array.from(markedIds)
-      : selectedId ? [selectedId] : [];
+  const handleMoveFiles = async (
+    destFolder: string,
+    actionType: 'MOVE' | 'COPY' = 'MOVE',
+    explicitPaths?: string[]
+  ) => {
+    const targets =
+      explicitPaths && explicitPaths.length > 0
+        ? explicitPaths
+        : markedIds.size > 0
+        ? Array.from(markedIds)
+        : selectedId
+        ? [selectedId]
+        : [];
 
     if (targets.length === 0) return;
 
     try {
       const res = await tauriApi.moveOrCopyFiles(targets, destFolder, actionType);
       showToast('success', `Đã chuyển ${res.success_count} ảnh vào thư mục`);
+      setMarkedIds((prev) => {
+        const next = new Set(prev);
+        targets.forEach((t) => next.delete(t));
+        return next;
+      });
       if (folderPath) {
         loadFolder(folderPath);
       }
@@ -592,7 +606,7 @@ export const App: React.FC = () => {
           parentFolderName={folderPath ? folderPath.split('/').pop() || '' : ''}
           subfolders={subfolders}
           onCreateSubfolder={handleCreateSubfolder}
-          onDropFiles={(dest) => handleMoveFiles(dest, 'MOVE')}
+          onDropFiles={(dest, paths) => handleMoveFiles(dest, 'MOVE', paths)}
           onFolderContextMenu={handleFolderContextMenu}
         />
 

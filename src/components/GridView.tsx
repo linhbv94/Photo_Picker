@@ -77,7 +77,8 @@ export const GridView: React.FC<GridViewProps> = ({
                   src={`${tauriApi.toAssetUrl(item.path)}?t=${cacheBust}`}
                   alt={item.filename}
                   loading="lazy"
-                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                  draggable={false}
+                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105 pointer-events-none"
                 />
 
                 {/* Big Center Tick Badge */}
