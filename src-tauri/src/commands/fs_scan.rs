@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 use std::time::UNIX_EPOCH;
 use tauri::{AppHandle, Emitter};
 use uuid::Uuid;

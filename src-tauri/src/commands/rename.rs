@@ -43,7 +43,6 @@ pub fn preview_batch_rename(
         }
 
         let orig_filename = p.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
-        let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
 
         let mut time_str = String::new();
         let mut sub_sec = None;
