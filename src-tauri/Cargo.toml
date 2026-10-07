@@ -1,6 +1,6 @@
 [package]
 name = "photo_picker"
-version = "1.0.0"
+version = "1.0.5"
 description = "VXPhotos — Lightweight Photo Picker & Media Triage Utility"
 authors = ["vic"]
 edition = "2021"
@@ -24,6 +24,7 @@ uuid = { version = "1", features = ["v4"] }
 kamadak-exif = "0.6"
 chrono = "0.4"
 walkdir = "2"
+trash = "5.2"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 cocoa = "0.26"

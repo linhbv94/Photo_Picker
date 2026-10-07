@@ -1,6 +1,6 @@
 {
   "name": "photo_picker",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "VXPhotos — Tiện ích desktop cá nhân siêu nhẹ, đa nền tảng phục vụ tuyển chọn, phân loại ảnh theo EXIF, xoay lossless và đổi tên hàng loạt an toàn.",
   "main": "index.js",
   "type": "module",

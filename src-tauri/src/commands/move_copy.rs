@@ -39,7 +39,29 @@ pub fn move_or_copy_files(
             }
         };
 
-        let target = dest_dir.join(file_name);
+        let mut target = dest_dir.join(file_name);
+        if target.exists() && target != src {
+            // Generate non-colliding name: name_1.ext, name_2.ext
+            let stem = src.file_stem().and_then(|s| s.to_str()).unwrap_or("file");
+            let ext = src.extension().and_then(|e| e.to_str()).unwrap_or("");
+            let mut counter = 1;
+            loop {
+                let candidate_name = if ext.is_empty() {
+                    format!("{}_{}", stem, counter)
+                } else {
+                    format!("{}_{}.{}", stem, counter, ext)
+                };
+                let candidate_path = dest_dir.join(candidate_name);
+                if !candidate_path.exists() {
+                    target = candidate_path;
+                    break;
+                }
+                counter += 1;
+                if counter > 9999 {
+                    break;
+                }
+            }
+        }
 
         if is_move {
             // First attempt direct rename (fastest on same volume)

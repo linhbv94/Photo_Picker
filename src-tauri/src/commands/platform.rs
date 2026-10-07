@@ -91,23 +91,8 @@ pub fn move_to_trash(file_paths: Vec<String>) -> Result<usize, String> {
             continue;
         }
 
-        #[cfg(target_os = "macos")]
-        {
-            // AppleScript to move to trash cleanly
-            let script = format!(
-                "tell application \"Finder\" to delete POSIX file \"{}\"",
-                path_str.replace('"', "\\\"")
-            );
-            if Command::new("osascript").arg("-e").arg(script).output().is_ok() {
-                count += 1;
-            }
-        }
-
-        #[cfg(not(target_os = "macos"))]
-        {
-            if std::fs::remove_file(p).is_ok() {
-                count += 1;
-            }
+        if trash::delete(p).is_ok() {
+            count += 1;
         }
     }
     Ok(count)

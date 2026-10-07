@@ -547,15 +547,12 @@ export const App: React.FC = () => {
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || isRenameModalOpen || isSettingsOpen) {
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || isRenameModalOpen || isSettingsOpen || isPreviewOpen) {
         return;
       }
 
       if (e.key === 'Escape') {
-        if (isPreviewOpen) {
-          e.preventDefault();
-          setIsPreviewOpen(false);
-        } else if (isInfoOpen) {
+        if (isInfoOpen) {
           e.preventDefault();
           setIsInfoOpen(false);
         } else if (markedIds.size > 0) {
@@ -565,7 +562,7 @@ export const App: React.FC = () => {
         }
       } else if (e.key === ' ') {
         e.preventDefault();
-        setIsPreviewOpen((prev) => !prev);
+        setIsPreviewOpen(true);
       } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
         e.preventDefault();
         if (visibleItems.length > 0) {
@@ -578,7 +575,7 @@ export const App: React.FC = () => {
           const prevIdx = Math.max(currentFocusedIndex - 1, 0);
           setSelectedId(visibleItems[prevIdx].id);
         }
-      } else if (e.key === 'x' || e.key === 'X' || e.key === 'm' || e.key === 'M' || e.key === '1') {
+      } else if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 'x' || e.key === 'X' || e.key === 'm' || e.key === 'M' || e.key === '1')) {
         if (currentFocusedItem) {
           e.preventDefault();
           handleToggleMark(currentFocusedItem);
