@@ -49,10 +49,14 @@ export const App: React.FC = () => {
     const applyTheme = (isDark: boolean, isBlack: boolean) => {
       root.classList.remove('dark', 'light');
       root.classList.add(isDark ? 'dark' : 'light');
+      document.body.classList.remove('dark', 'light');
+      document.body.classList.add(isDark ? 'dark' : 'light');
       if (isBlack) {
         root.style.backgroundColor = '#000000';
+        document.body.style.backgroundColor = '#000000';
       } else {
         root.style.backgroundColor = '';
+        document.body.style.backgroundColor = '';
       }
     };
 
@@ -639,7 +643,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="h-screen w-screen bg-[#0f1117] text-slate-100 flex flex-col overflow-hidden font-sans select-none">
+    <div className="h-screen w-screen bg-slate-50 dark:bg-[#0f1117] text-slate-900 dark:text-slate-100 flex flex-col overflow-hidden font-sans select-none">
       {/* 1. Custom Titlebar & Menu Bar */}
       <WindowBar
         onOpenFolder={handleOpenFolder}
