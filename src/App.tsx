@@ -433,6 +433,40 @@ export const App: React.FC = () => {
     }
   };
 
+  // 8b. Move to Trash
+  const handleDeleteToTrash = useCallback(async (explicitPaths?: string[]) => {
+    const targets =
+      explicitPaths && explicitPaths.length > 0
+        ? explicitPaths
+        : markedIds.size > 0
+        ? Array.from(markedIds)
+        : currentFocusedItem
+        ? [currentFocusedItem.path]
+        : [];
+
+    if (targets.length === 0) return;
+
+    try {
+      await tauriApi.moveToTrash(targets);
+      showToast(
+        'success',
+        language === 'vi'
+          ? `Đã chuyển ${targets.length} tệp vào Thùng rác`
+          : `Moved ${targets.length} files to Trash`
+      );
+      setMarkedIds((prev) => {
+        const next = new Set(prev);
+        targets.forEach((p) => next.delete(p));
+        return next;
+      });
+      if (folderPath) {
+        loadFolder(folderPath);
+      }
+    } catch (err: any) {
+      showToast('error', `Lỗi chuyển Thùng rác: ${err}`);
+    }
+  }, [markedIds, currentFocusedItem, language, folderPath, loadFolder]);
+
   // Drag and drop into sidebar
   const handleDragStart = (e: React.DragEvent, item: FileItem) => {
     const targetPaths = markedIds.has(item.id)
@@ -586,6 +620,9 @@ export const App: React.FC = () => {
       } else if ((e.metaKey || e.ctrlKey) && (e.key === 'o' || e.key === 'O')) {
         e.preventDefault();
         handleOpenFolder();
+      } else if (e.key === 'Delete' || (e.metaKey && e.key === 'Backspace')) {
+        e.preventDefault();
+        handleDeleteToTrash();
       }
     };
 
@@ -732,6 +769,7 @@ export const App: React.FC = () => {
             onRotate={() => handleRotate(90)}
             onRename={handleOpenBatchRename}
             onMoveToFolder={(dest) => handleMoveFiles(dest, 'MOVE')}
+            onDeleteToTrash={handleDeleteToTrash}
             onUnmarkAll={handleUnmarkAll}
           />
         </main>
@@ -817,14 +855,17 @@ export const App: React.FC = () => {
         onRevealInFinder={() => {
           if (contextMenu.targetPath) tauriApi.revealInFileManager(contextMenu.targetPath);
         }}
-        onMoveToTrash={async () => {
-          const targets = markedIds.size > 0
-            ? Array.from(markedIds)
-            : contextMenu.targetPath ? [contextMenu.targetPath] : [];
-          if (targets.length > 0) {
-            await tauriApi.moveToTrash(targets);
-            showToast('success', language === 'vi' ? `Đã chuyển ${targets.length} tệp vào Thùng rác` : `Moved ${targets.length} files to Trash`);
-            if (folderPath) loadFolder(folderPath);
+        onMoveToTrash={() => {
+          if (contextMenu.type === 'folder' && contextMenu.targetPath) {
+            handleDeleteToTrash([contextMenu.targetPath]);
+          } else if (contextMenu.type === 'card') {
+            if (contextMenu.isMarkedTarget) {
+              handleDeleteToTrash();
+            } else if (contextMenu.targetPath) {
+              handleDeleteToTrash([contextMenu.targetPath]);
+            }
+          } else {
+            handleDeleteToTrash();
           }
         }}
         onSetRootFolder={(f) => loadFolder(f)}

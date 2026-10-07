@@ -92,10 +92,6 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
   if (!state.isOpen) return null;
 
-  // Keep menu within viewport
-  const x = Math.min(state.x, window.innerWidth - 240);
-  const y = Math.min(state.y, window.innerHeight - 340);
-
   const effectiveCount = state.isMarkedTarget ? markedCount : 1;
 
   const isMac =
@@ -103,12 +99,18 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     (/Mac|iPod|iPhone|iPad/.test(navigator.platform) || /Macintosh/.test(navigator.userAgent));
 
   const revealLabel = isMac ? t('revealInFinder', language) : t('revealInExplorer', language);
+  const deleteShortcut = isMac ? 'Cmd+⌫' : 'Del';
+
+  // Responsive boundary positioning
+  const menuHeight = state.type === 'card' ? 440 : 200;
+  const x = Math.max(10, Math.min(state.x, window.innerWidth - 240));
+  const y = Math.max(10, Math.min(state.y, window.innerHeight - menuHeight - 16));
 
   return (
     <div
       ref={menuRef}
       style={{ left: `${x}px`, top: `${y}px` }}
-      className="fixed z-50 min-w-[210px] rounded-lg glass-dropdown py-1 text-xs border border-slate-200 dark:border-white/10 shadow-2xl animate-in fade-in zoom-in-95 duration-100 select-none"
+      className="fixed z-50 min-w-[220px] max-h-[calc(100vh-32px)] overflow-y-auto rounded-xl glass-dropdown py-1 text-xs border border-slate-200 dark:border-white/10 shadow-2xl animate-in fade-in zoom-in-95 duration-100 select-none"
     >
       {state.type === 'card' && (
         <>
@@ -241,6 +243,21 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">Cmd+C</span>
           </button>
 
+          {/* Prominent Delete to Trash Option */}
+          <button
+            onClick={() => {
+              onMoveToTrash();
+              onClose();
+            }}
+            className="w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-rose-50 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition-colors font-medium"
+          >
+            <div className="flex items-center gap-2">
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>{effectiveCount > 1 ? t('moveToTrashCount', language, { count: effectiveCount }) : t('moveToTrash', language)}</span>
+            </div>
+            <span className="text-[10px] opacity-75 font-mono">{deleteShortcut}</span>
+          </button>
+
           {subfolders.length > 0 && (
             <>
               <div className="h-px bg-slate-200 dark:bg-white/10 my-1" />
@@ -262,19 +279,6 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
               ))}
             </>
           )}
-
-          <div className="h-px bg-slate-200 dark:bg-white/10 my-1" />
-
-          <button
-            onClick={() => {
-              onMoveToTrash();
-              onClose();
-            }}
-            className="w-full text-left px-3 py-1.5 flex items-center gap-2 hover:bg-rose-50 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition-colors"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>{t('moveToTrash', language)}</span>
-          </button>
         </>
       )}
 
@@ -336,6 +340,19 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             <RefreshCw className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
             <span>{t('refreshSubfolder', language)}</span>
           </button>
+
+          <div className="h-px bg-slate-200 dark:bg-white/10 my-1" />
+
+          <button
+            onClick={() => {
+              onMoveToTrash();
+              onClose();
+            }}
+            className="w-full text-left px-3 py-1.5 flex items-center gap-2 hover:bg-rose-50 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>{t('deleteFolderToTrash', language)}</span>
+          </button>
         </>
       )}
 
@@ -351,6 +368,22 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             <span>{t('unmarkAllMenu', language, { count: markedCount })}</span>
             <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">Esc</span>
           </button>
+
+          {markedCount > 0 && (
+            <button
+              onClick={() => {
+                onMoveToTrash();
+                onClose();
+              }}
+              className="w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-rose-50 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{t('moveToTrashCount', language, { count: markedCount })}</span>
+              </div>
+              <span className="text-[10px] opacity-75 font-mono">{deleteShortcut}</span>
+            </button>
+          )}
 
           <button
             onClick={() => {
