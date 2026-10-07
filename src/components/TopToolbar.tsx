@@ -57,7 +57,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
 }) => {
   return (
     <header
-      className="h-11 w-full bg-[#141821]/80 border-b border-white/5 flex items-center justify-between px-3 select-none text-xs shrink-0 z-20 backdrop-blur-md gap-3"
+      className="h-11 w-full bg-white/90 dark:bg-[#141821]/80 border-b border-slate-200 dark:border-white/5 flex items-center justify-between px-3 select-none text-xs shrink-0 z-20 backdrop-blur-md gap-3"
       title={currentPath || ''}
     >
       {/* Left: Filter Chips */}
@@ -69,8 +69,8 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           }}
           className={`flex items-center gap-1 px-2.5 py-1 rounded-full transition-all text-xs font-medium ${
             filterMode === 'all' && !selectedCameraModel
-              ? 'bg-cyan-500 text-black shadow-sm shadow-cyan-500/30'
-              : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'
+              ? 'bg-cyan-500 text-slate-950 font-semibold shadow-xs'
+              : 'bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
           <CheckCircle2 className="w-3 h-3" />
@@ -84,21 +84,21 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           }}
           className={`flex items-center gap-1 px-2.5 py-1 rounded-full transition-all text-xs font-medium ${
             filterMode === 'camera' && !selectedCameraModel
-              ? 'bg-cyan-500 text-black shadow-sm shadow-cyan-500/30'
-              : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'
+              ? 'bg-cyan-500 text-slate-950 font-semibold shadow-xs'
+              : 'bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <Camera className="w-3 h-3 text-cyan-300" />
+          <Camera className="w-3 h-3 text-cyan-600 dark:text-cyan-300" />
           <span>{t('filterCamera', language)} ({counts.camera})</span>
         </button>
 
         {counts.phone > 0 && (
           <button
             onClick={() => onFilterModeChange('camera')}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition-all text-xs font-medium"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white transition-all text-xs font-medium"
           >
-            <Smartphone className="w-3 h-3 text-emerald-400" />
-            <span>Mobile ({counts.phone})</span>
+            <Smartphone className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+            <span>{t('filterMobile', language)} ({counts.phone})</span>
           </button>
         )}
 
@@ -109,8 +109,8 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           }}
           className={`flex items-center gap-1 px-2.5 py-1 rounded-full transition-all text-xs font-medium ${
             filterMode === 'screenshot'
-              ? 'bg-amber-500 text-black shadow-sm shadow-amber-500/30'
-              : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'
+              ? 'bg-amber-500 text-slate-950 font-semibold shadow-xs'
+              : 'bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
           <Monitor className="w-3 h-3" />
@@ -122,7 +122,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           <select
             value={selectedCameraModel || ''}
             onChange={(e) => onSelectCameraModel(e.target.value || null)}
-            className="bg-[#0f1117] border border-white/10 text-slate-200 text-xs rounded-full px-2.5 py-1 outline-none focus:ring-1 focus:ring-cyan-400"
+            className="bg-white dark:bg-[#0f1117] border border-slate-300 dark:border-white/10 text-slate-800 dark:text-slate-200 text-xs rounded-full px-2.5 py-1 outline-none focus:ring-1 focus:ring-cyan-500 shadow-2xs"
           >
             <option value="">{t('allCameras', language)}</option>
             {availableCameraModels.map((model) => (
@@ -142,7 +142,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           placeholder={t('searchPlaceholder', language)}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full bg-[#0f1117] border border-white/10 rounded-md pl-8 pr-3 py-1 text-xs text-white placeholder-slate-500 outline-none focus:ring-1 focus:ring-cyan-400"
+          className="w-full bg-white dark:bg-[#0f1117] border border-slate-300 dark:border-white/10 rounded-md pl-8 pr-3 py-1 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none focus:ring-1 focus:ring-cyan-500 shadow-2xs"
         />
       </div>
 
@@ -150,8 +150,8 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
       <div className="flex items-center gap-3 shrink-0">
         {/* Zoom slider (only in Grid mode) */}
         {viewMode === 'grid' && (
-          <div className="flex items-center gap-1.5 text-slate-400" title={`Zoom: ${zoomSize}px`}>
-            <Sliders className="w-3.5 h-3.5 text-slate-400" />
+          <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400" title={`${t('zoomTooltip', language)}: ${zoomSize}px`}>
+            <Sliders className="w-3.5 h-3.5" />
             <input
               type="range"
               min="80"
@@ -159,17 +159,19 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
               step="10"
               value={zoomSize}
               onChange={(e) => onZoomSizeChange(Number(e.target.value))}
-              className="w-20 accent-cyan-400 h-1 bg-white/10 rounded-lg cursor-pointer"
+              className="w-20 accent-cyan-500 h-1 bg-slate-300 dark:bg-white/10 rounded-lg cursor-pointer"
             />
           </div>
         )}
 
         {/* View mode switcher */}
-        <div className="flex items-center bg-[#0f1117] rounded-md p-0.5 border border-white/5">
+        <div className="flex items-center bg-slate-100 dark:bg-[#0f1117] rounded-md p-0.5 border border-slate-200 dark:border-white/5">
           <button
             onClick={() => onViewModeChange('grid')}
             className={`p-1 rounded transition-colors ${
-              viewMode === 'grid' ? 'bg-cyan-500/20 text-cyan-300 font-semibold' : 'text-slate-400 hover:text-white'
+              viewMode === 'grid'
+                ? 'bg-white dark:bg-cyan-500/20 text-cyan-800 dark:text-cyan-300 font-semibold shadow-2xs'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
             title="Cmd/Ctrl+1"
           >
@@ -178,7 +180,9 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           <button
             onClick={() => onViewModeChange('detail')}
             className={`p-1 rounded transition-colors ${
-              viewMode === 'detail' ? 'bg-cyan-500/20 text-cyan-300 font-semibold' : 'text-slate-400 hover:text-white'
+              viewMode === 'detail'
+                ? 'bg-white dark:bg-cyan-500/20 text-cyan-800 dark:text-cyan-300 font-semibold shadow-2xs'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
             title="Cmd/Ctrl+2"
           >
@@ -191,8 +195,8 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
           onClick={onToggleInfo}
           className={`p-1.5 rounded transition-all border ${
             isInfoOpen
-              ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-sm shadow-cyan-500/20'
-              : 'border-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+              ? 'bg-cyan-50 dark:bg-cyan-500/20 text-cyan-800 dark:text-cyan-300 border-cyan-400 dark:border-cyan-500/40 shadow-xs'
+              : 'border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
           }`}
           title="Cmd/Ctrl+I"
         >

@@ -46,23 +46,30 @@ export const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('vxphotos_theme', theme);
     const root = document.documentElement;
-    root.classList.remove('light-theme', 'black-theme', 'dark');
+    const applyTheme = (isDark: boolean, isBlack: boolean) => {
+      root.classList.remove('dark', 'light');
+      root.classList.add(isDark ? 'dark' : 'light');
+      if (isBlack) {
+        root.style.backgroundColor = '#000000';
+      } else {
+        root.style.backgroundColor = '';
+      }
+    };
 
-    let resolved = theme;
     if (theme === 'system') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      resolved = prefersDark ? 'dark' : 'light';
-    }
-
-    if (resolved === 'light') {
-      root.classList.add('light-theme');
-      root.setAttribute('data-theme', 'light');
-    } else if (resolved === 'black') {
-      root.classList.add('black-theme');
-      root.setAttribute('data-theme', 'black');
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      applyTheme(mq.matches, false);
+      const listener = (e: MediaQueryListEvent) => {
+        applyTheme(e.matches, false);
+      };
+      mq.addEventListener('change', listener);
+      return () => mq.removeEventListener('change', listener);
+    } else if (theme === 'light') {
+      applyTheme(false, false);
+    } else if (theme === 'black') {
+      applyTheme(true, true);
     } else {
-      root.classList.add('dark');
-      root.setAttribute('data-theme', 'dark');
+      applyTheme(true, false);
     }
   }, [theme]);
 
@@ -682,7 +689,7 @@ export const App: React.FC = () => {
         />
 
         {/* Center Viewport Canvas */}
-        <main className="flex-1 h-full overflow-hidden flex flex-col relative bg-[#0f1117]">
+        <main className="flex-1 h-full overflow-hidden flex flex-col relative bg-slate-100 dark:bg-[#0f1117]">
           {viewMode === 'grid' ? (
             <GridView
               items={visibleItems}
@@ -709,6 +716,7 @@ export const App: React.FC = () => {
               onItemContextMenu={handleItemContextMenu}
               onToggleMark={handleToggleMark}
               onDragStart={handleDragStart}
+              language={language}
             />
           )}
 
@@ -741,6 +749,7 @@ export const App: React.FC = () => {
         totalCount={visibleItems.length}
         isMarked={Boolean(selectedId && markedIds.has(selectedId))}
         cacheBust={cacheBust}
+        language={language}
         onClose={() => setIsPreviewOpen(false)}
         onNext={() => {
           if (visibleItems.length > 0) {
@@ -762,6 +771,7 @@ export const App: React.FC = () => {
       <BatchRenameModal
         isOpen={isRenameModalOpen}
         diffItems={diffItems}
+        language={language}
         onClose={() => setIsRenameModalOpen(false)}
         onConfirm={handleConfirmBatchRename}
         isProcessing={isRenaming}
@@ -772,7 +782,7 @@ export const App: React.FC = () => {
         onClose={() => setIsSettingsOpen(false)}
         onClearCache={() => {
           setCacheBust(Date.now());
-          showToast('success', 'Đã làm mới bộ nhớ đệm');
+          showToast('success', t('cacheClearedToast', language));
         }}
         theme={theme}
         onThemeChange={setTheme}
@@ -784,6 +794,7 @@ export const App: React.FC = () => {
         state={contextMenu}
         markedCount={markedIds.size}
         subfolders={subfolders}
+        language={language}
         onClose={() => setContextMenu((p) => ({ ...p, isOpen: false }))}
         onQuickPreview={() => setIsPreviewOpen(true)}
         onOpenSystemViewer={() => currentFocusedItem && handleItemDoubleClick(currentFocusedItem)}
@@ -796,7 +807,7 @@ export const App: React.FC = () => {
         onCopyPath={() => {
           if (contextMenu.targetPath) {
             navigator.clipboard.writeText(contextMenu.targetPath);
-            showToast('info', 'Đã sao chép đường dẫn');
+            showToast('info', language === 'vi' ? 'Đã sao chép đường dẫn' : 'Copied file path');
           }
         }}
         onRevealInFinder={() => {
@@ -808,13 +819,13 @@ export const App: React.FC = () => {
             : contextMenu.targetPath ? [contextMenu.targetPath] : [];
           if (targets.length > 0) {
             await tauriApi.moveToTrash(targets);
-            showToast('success', `Đã chuyển ${targets.length} tệp vào Thùng rác`);
+            showToast('success', language === 'vi' ? `Đã chuyển ${targets.length} tệp vào Thùng rác` : `Moved ${targets.length} files to Trash`);
             if (folderPath) loadFolder(folderPath);
           }
         }}
         onSetRootFolder={(f) => loadFolder(f)}
         onCreateSubfolder={() => {
-          const name = prompt('Nhập tên thư mục mới:');
+          const name = prompt(language === 'vi' ? 'Nhập tên thư mục mới:' : 'Enter new folder name:');
           if (name) handleCreateSubfolder(name);
         }}
         onRefresh={() => folderPath && loadFolder(folderPath)}

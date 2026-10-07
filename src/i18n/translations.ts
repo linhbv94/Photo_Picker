@@ -2,19 +2,20 @@ export type Language = 'vi' | 'en';
 
 export const translations = {
   vi: {
-    // Top menu
+    // Window & Top menu
     file: 'Tệp',
     edit: 'Chỉnh sửa',
     view: 'Xem',
+    tools: 'Công cụ',
     window: 'Cửa sổ',
     help: 'Trợ giúp',
     openFolder: 'Mở thư mục...',
-    revealInFinder: 'Hiện trong Finder / Explorer',
+    revealInFileManager: 'Hiện trong Finder / Explorer',
     settings: 'Cài đặt...',
     about: 'Về VXPhotos',
     selectAll: 'Chọn tất cả',
     invertSelection: 'Đảo chọn',
-    deselectAll: 'Bỏ chọn tất cả',
+    deselectAll: 'Bỏ chọn tất cả (Esc)',
     batchRename: 'Đổi tên hàng loạt...',
     losslessRotate90: 'Xoay 90° xuôi',
     toggleSidebar: 'Bật/tắt thanh thư mục',
@@ -25,6 +26,7 @@ export const translations = {
     // Toolbar
     filterAll: 'Tất cả ảnh',
     filterCamera: 'Chỉ ảnh máy cơ',
+    filterMobile: 'Ảnh điện thoại',
     filterScreenshot: 'Ảnh chụp màn hình',
     allCameras: 'Tất cả dòng máy',
     viewGrid: 'Lưới ảnh',
@@ -33,6 +35,7 @@ export const translations = {
     sortName: 'Tên tệp',
     sortDate: 'Ngày chụp',
     sortSize: 'Dung lượng',
+    zoomTooltip: 'Thu phóng kích thước ảnh',
 
     // Sidebar
     subfolders: 'Thư mục con',
@@ -52,18 +55,41 @@ export const translations = {
     cancelSelection: 'Hủy chọn tất cả (Esc)',
     chooseSubfolder: 'Chọn thư mục đích:',
 
-    // Info Panel
+    // Info Panel / Drawer
     exifInfo: 'Thông tin tệp & EXIF',
     filename: 'Tên tệp',
     size: 'Dung lượng',
+    format: 'Định dạng',
     resolution: 'Độ phân giải',
     dateTaken: 'Ngày chụp',
-    camera: 'Máy ảnh',
+    cameraDevice: 'Thiết bị chụp',
+    cameraBrand: 'Hãng máy',
+    cameraModel: 'Model',
     lens: 'Ống kính',
+    exposureParams: 'Thông số phơi sáng',
     exposure: 'Phơi sáng',
+    aperture: 'Khẩu độ',
+    shutterSpeed: 'Tốc độ',
+    iso: 'ISO',
     focalLength: 'Tiêu cự',
+    colorSpace: 'Không gian màu',
+    gpsLocation: 'Vị trí Địa lý (GPS)',
+    altitude: 'Độ cao',
+    openGoogleMaps: 'Mở Google Maps',
+    selectPhotoHint: 'Chọn một bức ảnh để xem chi tiết thông số EXIF',
     quickActions: 'Thao tác nhanh',
     openInSystem: 'Mở bằng ứng dụng mặc định',
+
+    // Detail Table View Columns
+    colFilename: 'Tên tệp',
+    colDate: 'Ngày chụp',
+    colCameraMake: 'Hãng máy',
+    colCameraModel: 'Dòng máy',
+    colLens: 'Ống kính',
+    colAperture: 'Khẩu độ',
+    colShutter: 'Tốc độ',
+    colIso: 'ISO',
+    colSize: 'Dung lượng',
 
     // Settings Modal
     settingsTitle: 'Cài đặt VXPhotos',
@@ -72,35 +98,95 @@ export const translations = {
     tabAbout: 'Giới thiệu',
     themeLabel: 'Giao diện (Theme)',
     themeDark: 'Tối chuẩn (Slate)',
-    themeBlack: 'OLED Black',
-    themeLight: 'Sáng (Light)',
-    themeSystem: 'Theo hệ điều hành',
+    themeBlack: 'OLED Pure Black',
+    themeLight: 'Sáng dịu (Light Clean)',
+    themeSystem: 'Theo hệ điều hành (System)',
     langLabel: 'Ngôn ngữ (Language)',
-    langVi: '🇻🇳 Tiếng Việt',
-    langEn: '🇺🇸 English',
+    langVi: 'Tiếng Việt',
+    langEn: 'English',
     version: 'Phiên bản',
+    dragDropTitle: 'Thao tác Kéo Thả vào Thư mục',
+    dragDropDesc: 'Mặc định: Di chuyển tệp tin (Move). Giữ phím Option (Mac) hoặc Alt (Win) khi thả để Sao chép (Copy).',
+    renameStandardTitle: 'Quy chuẩn Tên tệp Tự động',
+    renameStandardDesc: 'Định dạng chuẩn: YYYYMMDD_HHMM_xx.ext (tự động phân giải microsecond và tên gốc để giữ thứ tự).',
+    cacheTitle: 'Bộ nhớ đệm (Cache)',
+    cacheDesc: 'Làm mới cache metadata và thumbnail tạm thời',
+    clearCacheBtn: 'Xóa Cache',
+    cacheClearedToast: 'Đã dọn sạch bộ nhớ cache tạm thời!',
 
-    // Toasts
+    // Shortcuts Tab
+    sc_toggle_mark: 'Đánh dấu chọn ảnh (Toggle Mark với dấu Tick giữa ảnh)',
+    sc_focus_select: 'Chọn tiêu điểm xem trước (Focus selection)',
+    sc_range_mark: 'Đánh dấu dải ảnh liên tiếp từ ảnh trước đó (Range Marking)',
+    sc_unmark_all: 'Hủy đánh dấu toàn bộ ảnh đang chọn (Unmark All)',
+    sc_quick_look: 'Bật / Tắt xem nhanh ảnh phóng to (Quick Look / Peek HUD)',
+    sc_system_viewer: 'Mở ảnh bằng Trình xem mặc định hệ thống (Preview.app / Win Photos)',
+    sc_navigate: 'Di chuyển con trỏ tiêu điểm qua lại giữa các ảnh',
+    sc_lossless_rotate: 'Xoay 90° cùng chiều kim đồng hồ không giảm chất lượng (Lossless DCT)',
+    sc_batch_rename: 'Mở hộp thoại đổi tên hàng loạt (Batch Rename)',
+    sc_select_all: 'Đánh dấu tất cả các ảnh đang hiển thị',
+    sc_toggle_sidebar: 'Bật / Tắt cây thư mục bên trái (Left Sidebar)',
+    sc_toggle_info: 'Bật / Tắt ngăn thông tin chi tiết EXIF (Right Drawer)',
+    sc_switch_view: 'Chuyển đổi giữa chế độ Lưới (Grid) và Bảng (Detail)',
+    sc_open_folder: 'Chọn và mở thư mục ảnh mới',
+
+    // About Tab
+    aboutVersion: 'Phiên bản 1.0.0 (zTools Suite)',
+    aboutDesc: 'Tiện ích tuyển chọn và phân loại ảnh cá nhân siêu nhẹ, hỗ trợ lọc theo siêu dữ liệu EXIF máy ảnh, xoay Lossless DCT và đổi tên hàng loạt an toàn.',
+
+    // Batch Rename Modal
+    batchRenameTitle: 'Xem trước Đổi tên Hàng loạt',
+    batchRenameCount: '{count} ảnh',
+    renameRuleHint: 'Quy chuẩn tên: YYYYMMDD_HHMM_xx.ext (dựa theo ngày chụp EXIF)',
+    conflictDetected: 'Phát hiện {count} tệp trùng tên',
+    noConflicts: 'Không có xung đột tên',
+    duplicateName: 'Trùng tên',
+    cancelBtn: 'Hủy',
+    confirmRenameBtn: 'Đổi tên ngay',
+    renamingInProgress: 'Đang xử lý...',
+
+    // Context Menu
+    openSystemViewer: 'Mở bằng ứng dụng hệ thống',
+    quickLook: 'Xem nhanh (Quick Look)',
+    viewExifDetails: 'Xem chi tiết EXIF',
+    toggleMarkSelection: 'Đánh dấu tuyển chọn',
+    rotate90N: 'Xoay 90° ({count} ảnh)',
+    rotate270: 'Xoay 270° (Ngược chiều kim)',
+    copyPath: 'Sao chép đường dẫn',
+    revealInFinder: 'Hiện trong Finder',
+    revealInExplorer: 'Hiện trong File Explorer',
+    moveToTrash: 'Chuyển vào Thùng rác',
+    openAsRoot: 'Mở làm thư mục chính',
+    refreshSubfolder: 'Làm mới thư mục',
+    unmarkAllMenu: 'Bỏ đánh dấu tất cả ({count} ảnh)',
+    openOtherFolder: 'Mở thư mục ảnh khác...',
+    moveToSubfolder: 'Chuyển vào thư mục con',
+    copyToSubfolder: 'Sao chép vào thư mục con',
+
+    // Toasts & Errors
     folderLoaded: 'Đã tải {count} ảnh từ thư mục',
     movedSuccess: 'Đã chuyển {count} ảnh vào thư mục',
     copiedSuccess: 'Đã sao chép {count} ảnh vào thư mục',
     rotatedSuccess: 'Đã xoay {count} ảnh',
     createdSubfolder: 'Đã tạo thư mục: {name}',
+    noPhotosFound: 'Không tìm thấy ảnh phù hợp',
+    noPhotosHint: 'Thử thay đổi bộ lọc hoặc chọn thư mục khác',
   },
   en: {
-    // Top menu
+    // Window & Top menu
     file: 'File',
     edit: 'Edit',
     view: 'View',
+    tools: 'Tools',
     window: 'Window',
     help: 'Help',
     openFolder: 'Open Folder...',
-    revealInFinder: 'Reveal in Finder / Explorer',
+    revealInFileManager: 'Reveal in Finder / Explorer',
     settings: 'Settings...',
     about: 'About VXPhotos',
     selectAll: 'Select All',
     invertSelection: 'Invert Selection',
-    deselectAll: 'Deselect All',
+    deselectAll: 'Deselect All (Esc)',
     batchRename: 'Batch Rename...',
     losslessRotate90: 'Rotate 90° Clockwise',
     toggleSidebar: 'Toggle Subfolder Sidebar',
@@ -111,6 +197,7 @@ export const translations = {
     // Toolbar
     filterAll: 'All Photos',
     filterCamera: 'Camera Only',
+    filterMobile: 'Mobile',
     filterScreenshot: 'Screenshots',
     allCameras: 'All Cameras',
     viewGrid: 'Grid View',
@@ -119,6 +206,7 @@ export const translations = {
     sortName: 'Filename',
     sortDate: 'Date Taken',
     sortSize: 'File Size',
+    zoomTooltip: 'Zoom thumbnail size',
 
     // Sidebar
     subfolders: 'Subfolders',
@@ -138,18 +226,41 @@ export const translations = {
     cancelSelection: 'Deselect all (Esc)',
     chooseSubfolder: 'Select destination folder:',
 
-    // Info Panel
+    // Info Panel / Drawer
     exifInfo: 'File Info & EXIF',
     filename: 'Filename',
     size: 'Size',
+    format: 'Format',
     resolution: 'Resolution',
     dateTaken: 'Date Taken',
-    camera: 'Camera',
+    cameraDevice: 'Capture Device',
+    cameraBrand: 'Brand',
+    cameraModel: 'Model',
     lens: 'Lens',
+    exposureParams: 'Exposure Settings',
     exposure: 'Exposure',
+    aperture: 'Aperture',
+    shutterSpeed: 'Shutter Speed',
+    iso: 'ISO',
     focalLength: 'Focal Length',
+    colorSpace: 'Color Space',
+    gpsLocation: 'GPS Location',
+    altitude: 'Altitude',
+    openGoogleMaps: 'Open Google Maps',
+    selectPhotoHint: 'Select a photo to inspect EXIF metadata',
     quickActions: 'Quick Actions',
     openInSystem: 'Open in Default Viewer',
+
+    // Detail Table View Columns
+    colFilename: 'Filename',
+    colDate: 'Date Taken',
+    colCameraMake: 'Brand',
+    colCameraModel: 'Model',
+    colLens: 'Lens',
+    colAperture: 'Aperture',
+    colShutter: 'Shutter',
+    colIso: 'ISO',
+    colSize: 'Size',
 
     // Settings Modal
     settingsTitle: 'VXPhotos Settings',
@@ -162,16 +273,75 @@ export const translations = {
     themeLight: 'Light Clean',
     themeSystem: 'Follow System OS',
     langLabel: 'Language',
-    langVi: '🇻🇳 Tiếng Việt',
-    langEn: '🇺🇸 English',
+    langVi: 'Tiếng Việt',
+    langEn: 'English',
     version: 'Version',
+    dragDropTitle: 'Drag & Drop Behavior',
+    dragDropDesc: 'Default: Move files. Hold Option (Mac) or Alt (Win) while dropping to Copy.',
+    renameStandardTitle: 'Auto File Naming Convention',
+    renameStandardDesc: 'Standard pattern: YYYYMMDD_HHMM_xx.ext (auto-resolves microseconds and original name to preserve sequence).',
+    cacheTitle: 'Cache & Temporary Data',
+    cacheDesc: 'Refresh temporary metadata and thumbnail cache',
+    clearCacheBtn: 'Clear Cache',
+    cacheClearedToast: 'Temporary cache cleared!',
 
-    // Toasts
+    // Shortcuts Tab
+    sc_toggle_mark: 'Toggle photo mark (large center checkmark)',
+    sc_focus_select: 'Select focus preview item',
+    sc_range_mark: 'Continuous range marking from previous photo',
+    sc_unmark_all: 'Clear all marks across folder',
+    sc_quick_look: 'Toggle Quick Look full preview modal',
+    sc_system_viewer: 'Open with OS Default Viewer (Preview / Photos)',
+    sc_navigate: 'Navigate selection focus across items',
+    sc_lossless_rotate: 'Lossless 90° clockwise rotation (JPEG/HEIC/TIFF)',
+    sc_batch_rename: 'Open Batch Rename dialog',
+    sc_select_all: 'Select / mark all visible photos',
+    sc_toggle_sidebar: 'Toggle Subfolders sidebar',
+    sc_toggle_info: 'Toggle EXIF Info panel',
+    sc_switch_view: 'Toggle Grid and Detail Table view modes',
+    sc_open_folder: 'Open photo directory dialog',
+
+    // About Tab
+    aboutVersion: 'Version 1.0.0 (zTools Suite)',
+    aboutDesc: 'Ultra-lightweight personal photo culling and triage tool with camera EXIF filtering, lossless DCT rotation, and safe batch renaming.',
+
+    // Batch Rename Modal
+    batchRenameTitle: 'Batch Rename Preview',
+    batchRenameCount: '{count} photos',
+    renameRuleHint: 'Naming pattern: YYYYMMDD_HHMM_xx.ext (based on EXIF date taken)',
+    conflictDetected: 'Detected {count} filename conflicts',
+    noConflicts: 'No conflicts detected',
+    duplicateName: 'Duplicate',
+    cancelBtn: 'Cancel',
+    confirmRenameBtn: 'Apply Rename',
+    renamingInProgress: 'Processing...',
+
+    // Context Menu
+    openSystemViewer: 'Open in System Viewer',
+    quickLook: 'Quick Look',
+    viewExifDetails: 'View EXIF Details',
+    toggleMarkSelection: 'Toggle Selection Mark',
+    rotate90N: 'Rotate 90° ({count} photos)',
+    rotate270: 'Rotate 270° (Counter-clockwise)',
+    copyPath: 'Copy File Path',
+    revealInFinder: 'Reveal in Finder',
+    revealInExplorer: 'Reveal in File Explorer',
+    moveToTrash: 'Move to Trash',
+    openAsRoot: 'Open as Current Folder',
+    refreshSubfolder: 'Refresh Subfolders',
+    unmarkAllMenu: 'Deselect All ({count} photos)',
+    openOtherFolder: 'Open Other Folder...',
+    moveToSubfolder: 'Move to Subfolder',
+    copyToSubfolder: 'Copy to Subfolder',
+
+    // Toasts & Errors
     folderLoaded: 'Loaded {count} photos from folder',
     movedSuccess: 'Moved {count} photos to destination folder',
     copiedSuccess: 'Copied {count} photos to destination folder',
     rotatedSuccess: 'Rotated {count} photos',
     createdSubfolder: 'Created folder: {name}',
+    noPhotosFound: 'No matching photos found',
+    noPhotosHint: 'Try changing your filter criteria or open another folder',
   },
 };
 
@@ -179,7 +349,7 @@ export type TranslationKey = keyof typeof translations['vi'];
 
 export function t(key: TranslationKey, lang: Language = 'vi', params?: Record<string, string | number>): string {
   const dict = translations[lang] || translations['vi'];
-  let str = dict[key] || translations['vi'][key] || key;
+  let str = (dict as any)[key] || (translations['vi'] as any)[key] || key;
   if (params) {
     Object.entries(params).forEach(([k, v]) => {
       str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));

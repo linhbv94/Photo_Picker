@@ -60,16 +60,16 @@ export const GridView: React.FC<GridViewProps> = ({
               onContextMenu={(e) => onItemContextMenu(e, item)}
               className={`group relative flex flex-col rounded-lg overflow-hidden transition-all duration-100 border ${
                 isSelected
-                  ? 'ring-2 ring-cyan-400 border-cyan-400 shadow-lg shadow-cyan-500/20 z-10'
+                  ? 'ring-2 ring-cyan-500 border-cyan-500 shadow-lg shadow-cyan-500/20 z-10'
                   : isMarked
-                  ? 'border-amber-400/50 bg-amber-500/10'
-                  : 'border-white/5 bg-[#141821]/70 hover:border-white/20 hover:bg-[#141821]'
+                  ? 'border-amber-400/60 bg-amber-500/10'
+                  : 'border-slate-200 dark:border-white/5 bg-white dark:bg-[#141821]/70 hover:border-slate-300 dark:hover:border-white/20 hover:bg-slate-50 dark:hover:bg-[#141821] shadow-2xs'
               }`}
             >
               {/* Thumbnail Container (Click = Mark / Unmark) */}
               <div
                 onClick={(e) => onToggleMark(item, e)}
-                className="relative w-full overflow-hidden bg-black/40 flex items-center justify-center cursor-pointer select-none"
+                className="relative w-full overflow-hidden bg-slate-200/60 dark:bg-black/40 flex items-center justify-center cursor-pointer select-none"
                 style={{ height: `${zoomSize * 0.85}px` }}
                 title={isMarked ? 'Bỏ đánh dấu ảnh này' : 'Đánh dấu chọn ảnh này (Click / Phím X)'}
               >
@@ -86,7 +86,7 @@ export const GridView: React.FC<GridViewProps> = ({
                   className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-all duration-150 ${
                     isMarked
                       ? 'bg-amber-500/20'
-                      : 'bg-black/0 group-hover:bg-black/30'
+                      : 'bg-black/0 group-hover:bg-black/25'
                   }`}
                 >
                   <div
@@ -114,18 +114,18 @@ export const GridView: React.FC<GridViewProps> = ({
                 onClick={(e) => onItemClick(item, e)}
                 className={`p-2 flex flex-col gap-0.5 text-left transition-colors cursor-pointer border-t select-none ${
                   isSelected
-                    ? 'bg-cyan-500/15 border-cyan-400/40'
-                    : 'bg-[#141821]/95 border-white/5 hover:bg-[#181d28]'
+                    ? 'bg-cyan-50/90 dark:bg-cyan-500/15 border-cyan-300 dark:border-cyan-400/40 text-cyan-900 dark:text-cyan-200'
+                    : 'bg-white dark:bg-[#141821]/95 border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-[#181d28]'
                 }`}
                 title="Bấm để chọn tiêu điểm (Focus)"
               >
-                <span className="text-xs font-medium text-slate-200 truncate" title={item.filename}>
+                <span className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate" title={item.filename}>
                   {item.filename}
                 </span>
 
-                <div className="flex items-center justify-between text-[10px] text-slate-400">
+                <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
                   <span>{dateTaken || formatBytes(item.size_bytes)}</span>
-                  <span className="uppercase text-[9px] px-1 py-0.2 rounded bg-white/5 text-slate-400 font-mono">
+                  <span className="uppercase text-[9px] px-1 py-0.2 rounded bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-mono">
                     {item.extension}
                   </span>
                 </div>
@@ -136,10 +136,10 @@ export const GridView: React.FC<GridViewProps> = ({
       </div>
 
       {items.length === 0 && (
-        <div className="h-full flex flex-col items-center justify-center text-slate-500 gap-2">
-          <Camera className="w-10 h-10 stroke-[1.5] text-slate-600" />
+        <div className="h-full flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 gap-2">
+          <Camera className="w-10 h-10 stroke-[1.5] text-slate-400 dark:text-slate-600" />
           <span className="text-sm font-medium">Không tìm thấy ảnh phù hợp</span>
-          <span className="text-xs text-slate-600">Thử thay đổi bộ lọc hoặc chọn thư mục khác</span>
+          <span className="text-xs text-slate-400 dark:text-slate-600">Thử thay đổi bộ lọc hoặc chọn thư mục khác</span>
         </div>
       )}
     </div>

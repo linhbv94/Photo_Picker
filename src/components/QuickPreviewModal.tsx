@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { FileItem } from '../types';
 import { tauriApi } from '../services/tauriApi';
+import { t, Language } from '../i18n/translations';
 
 interface QuickPreviewModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ interface QuickPreviewModalProps {
   totalCount: number;
   isMarked: boolean;
   cacheBust?: number;
+  language?: Language;
   onClose: () => void;
   onNext: () => void;
   onPrev: () => void;
@@ -32,6 +34,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
   totalCount,
   isMarked,
   cacheBust,
+  language = 'vi',
   onClose,
   onNext,
   onPrev,
@@ -42,6 +45,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
   const isMac =
     typeof navigator !== 'undefined' &&
     (/Mac|iPod|iPhone|iPad/.test(navigator.platform) || /Macintosh/.test(navigator.userAgent));
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -83,7 +87,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
       >
         <div className="flex items-center gap-2 truncate">
           <span className="font-semibold text-white truncate max-w-md">{item.filename}</span>
-          <span className="text-slate-500">
+          <span className="text-slate-500 font-mono">
             ({currentIndex + 1} / {totalCount})
           </span>
         </div>
@@ -92,15 +96,15 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
           <button
             onClick={onOpenSystemViewer}
             className="flex items-center gap-1 px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-slate-200 transition-colors text-xs"
-            title="Mở bằng Trình xem mặc định (Enter)"
+            title="Enter"
           >
             <Maximize2 className="w-3.5 h-3.5" />
-            <span>Mở System Viewer</span>
+            <span>{t('openInSystem', language)}</span>
           </button>
           <button
             onClick={onClose}
             className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-            title="Đóng xem nhanh (Space / Esc)"
+            title="Space / Esc"
           >
             <X className="w-5 h-5" />
           </button>
@@ -113,7 +117,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
         <button
           onClick={onPrev}
           className="absolute left-4 z-10 p-2.5 rounded-full bg-black/60 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 transition-all hover:scale-110"
-          title="Ảnh trước (Mũi tên Trái)"
+          title="←"
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
@@ -127,7 +131,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
         <button
           onClick={onNext}
           className="absolute right-4 z-10 p-2.5 rounded-full bg-black/60 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 transition-all hover:scale-110"
-          title="Ảnh sau (Mũi tên Phải)"
+          title="→"
         >
           <ChevronRight className="w-6 h-6" />
         </button>
@@ -151,10 +155,10 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
           <button
             onClick={onRotate}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-slate-200 transition-colors font-medium"
-            title="Xoay 90° cùng chiều kim đồng hồ (Phím R)"
+            title="R"
           >
             <RotateCw className="w-3.5 h-3.5" />
-            <span>Xoay 90°</span>
+            <span>{t('rotate90', language)}</span>
           </button>
 
           <button
@@ -164,10 +168,10 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                 ? 'bg-amber-400 text-black shadow-lg shadow-amber-500/30'
                 : 'bg-white/10 hover:bg-white/20 text-slate-200'
             }`}
-            title="Đánh dấu chọn (Phím M hoặc 1)"
+            title="M"
           >
             <Check className="w-3.5 h-3.5 stroke-[3]" />
-            <span>{isMarked ? 'Đã đánh dấu' : 'Đánh dấu'}</span>
+            <span>{isMarked ? t('cancelSelection', language) : t('toggleMarkSelection', language)}</span>
           </button>
         </div>
       </div>

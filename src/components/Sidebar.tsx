@@ -36,7 +36,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [newFolderName, setNewFolderName] = useState('');
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
 
-  // Global dragend listener to ensure highlight is cleared when mouse releases anywhere
   useEffect(() => {
     const handleDragEnd = () => {
       setDragOverFolderId(null);
@@ -129,7 +128,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return (
       <button
         onClick={onToggle}
-        className="h-full w-4 bg-[#141821]/80 hover:bg-cyan-500/20 border-r border-white/5 flex items-center justify-center text-slate-400 hover:text-cyan-300 transition-colors shrink-0 z-30"
+        className="h-full w-4 bg-slate-100/90 hover:bg-cyan-50 dark:bg-[#141821]/80 dark:hover:bg-cyan-500/20 border-r border-slate-200 dark:border-white/5 flex items-center justify-center text-slate-500 hover:text-cyan-700 dark:text-slate-400 dark:hover:text-cyan-300 transition-colors shrink-0 z-30"
         title="Cmd/Ctrl+B"
       >
         <ChevronRight className="w-3.5 h-3.5" />
@@ -138,20 +137,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }
 
   return (
-    <aside className="w-56 h-full bg-[#141821]/95 border-r border-white/5 flex flex-col shrink-0 select-none z-20">
+    <aside className="w-56 h-full bg-slate-50/95 dark:bg-[#141821]/95 border-r border-slate-200 dark:border-white/5 flex flex-col shrink-0 select-none z-20">
       {/* Header */}
-      <div className="h-10 px-3 border-b border-white/5 flex items-center justify-between text-xs font-medium text-slate-300">
+      <div className="h-10 px-3 border-b border-slate-200 dark:border-white/5 flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300">
         <div className="flex items-center gap-2 truncate">
-          <FolderOpen className="w-4 h-4 text-cyan-400 shrink-0" />
-          <span className="truncate font-semibold text-slate-200" title={parentFolderName || 'Thư mục'}>
-            {parentFolderName || 'Thư mục'}
+          <FolderOpen className="w-4 h-4 text-cyan-600 dark:text-cyan-400 shrink-0" />
+          <span className="truncate font-semibold text-slate-800 dark:text-slate-200" title={parentFolderName || t('subfolders', language)}>
+            {parentFolderName || t('subfolders', language)}
           </span>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setIsCreating((prev) => !prev)}
             className={`p-1 rounded transition-colors ${
-              isCreating ? 'bg-cyan-500/20 text-cyan-300' : 'hover:bg-white/10 text-slate-400 hover:text-slate-200'
+              isCreating
+                ? 'bg-cyan-50 text-cyan-800 dark:bg-cyan-500/20 dark:text-cyan-300'
+                : 'hover:bg-slate-200/60 dark:hover:bg-white/10 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
             title={t('newFolder', language)}
           >
@@ -159,7 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
           <button
             onClick={onToggle}
-            className="p-1 hover:bg-white/10 text-slate-400 hover:text-slate-200 rounded transition-colors"
+            className="p-1 hover:bg-slate-200/60 dark:hover:bg-white/10 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 rounded transition-colors"
             title="Cmd/Ctrl+B"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
@@ -169,13 +170,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Subfolder list */}
       <div className="flex-1 overflow-y-auto px-1.5 py-2 space-y-1">
-        <div className="px-2 py-1 text-[10px] font-semibold tracking-wider text-slate-500 uppercase pointer-events-none">
+        <div className="px-2 py-1 text-[10px] font-semibold tracking-wider text-slate-400 dark:text-slate-500 uppercase pointer-events-none">
           {t('subfolders', language)} ({subfolders.length})
         </div>
 
         {/* Inline New Folder Input when button at header is clicked */}
         {isCreating && (
-          <form onSubmit={handleCreateSubmit} className="p-2 mb-2 rounded-lg bg-[#0f1117] border border-cyan-500/50 flex flex-col gap-1.5 animate-in fade-in zoom-in-95 duration-100">
+          <form onSubmit={handleCreateSubmit} className="p-2 mb-2 rounded-lg bg-white dark:bg-[#0f1117] border border-cyan-500/50 shadow-md flex flex-col gap-1.5 animate-in fade-in zoom-in-95 duration-100">
             <input
               type="text"
               autoFocus
@@ -185,20 +186,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onKeyDown={(e) => {
                 if (e.key === 'Escape') setIsCreating(false);
               }}
-              className="w-full min-w-0 bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-cyan-400"
+              className="w-full min-w-0 bg-slate-50 dark:bg-black/40 border border-slate-300 dark:border-white/10 rounded px-2 py-1 text-xs text-slate-900 dark:text-white outline-none focus:border-cyan-500"
             />
             <div className="flex items-center justify-end gap-1.5">
               <button
                 type="button"
                 onClick={() => setIsCreating(false)}
-                className="px-2 py-0.5 text-slate-400 hover:text-white text-xs rounded hover:bg-white/5 transition-colors"
+                className="px-2 py-0.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white text-xs rounded hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
               >
                 {t('cancel', language)}
               </button>
               <button
                 type="submit"
                 disabled={!newFolderName.trim()}
-                className="px-2.5 py-0.5 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black font-semibold rounded text-xs transition-colors"
+                className="px-2.5 py-0.5 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-slate-950 font-semibold rounded text-xs transition-colors shadow-2xs"
               >
                 {t('create', language)}
               </button>
@@ -219,7 +220,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={`group flex items-center justify-between px-2.5 py-2 rounded-lg transition-all cursor-pointer ${
                 isDragOver
                   ? 'bg-cyan-500/35 ring-2 ring-cyan-400 border border-cyan-300 text-white scale-[1.03] shadow-lg shadow-cyan-500/30'
-                  : 'hover:bg-white/5 text-slate-300 hover:text-white border border-transparent'
+                  : 'hover:bg-slate-200/60 dark:hover:bg-white/5 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white border border-transparent'
               }`}
             >
               <div className="flex items-center gap-2 truncate pointer-events-none">
@@ -227,7 +228,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={`w-4 h-4 shrink-0 transition-transform ${
                     isDragOver
                       ? 'text-cyan-300 fill-cyan-400 scale-125'
-                      : 'text-amber-400/80 group-hover:text-amber-400'
+                      : 'text-amber-500 group-hover:text-amber-600 dark:text-amber-400/80 dark:group-hover:text-amber-400'
                   }`}
                 />
                 <span className={`truncate ${isDragOver ? 'font-bold text-white' : ''}`}>
@@ -236,11 +237,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               {isDragOver ? (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-400 text-black shadow-sm shrink-0 pointer-events-none">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-400 text-slate-950 shadow-sm shrink-0 pointer-events-none">
                   {t('dropHere', language)}
                 </span>
               ) : folder.direct_children_count > 0 ? (
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/5 text-slate-400 pointer-events-none">
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200/80 dark:bg-white/5 text-slate-600 dark:text-slate-400 pointer-events-none">
                   {folder.direct_children_count}
                 </span>
               ) : null}
@@ -249,7 +250,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
 
         {subfolders.length === 0 && !isCreating && (
-          <div className="px-3 py-4 text-center text-slate-500 text-[11px] italic">
+          <div className="px-3 py-4 text-center text-slate-400 dark:text-slate-500 text-[11px] italic">
             {t('emptySubfolders', language)}
           </div>
         )}

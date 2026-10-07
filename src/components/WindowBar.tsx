@@ -85,7 +85,7 @@ export const WindowBar: React.FC<WindowBarProps> = ({
       { label: t('toggleSidebar', language), shortcut: 'Cmd/Ctrl+B', action: onToggleSidebar },
       { label: t('toggleInfoPanel', language), shortcut: 'Cmd/Ctrl+I', action: onToggleInfo },
     ],
-    Tools: [
+    [t('tools', language)]: [
       { label: t('losslessRotate90', language), shortcut: 'R', action: onRotateCurrent },
       { label: t('batchRename', language), shortcut: 'Cmd/Ctrl+R', action: onRenameCurrent },
     ],
@@ -97,20 +97,20 @@ export const WindowBar: React.FC<WindowBarProps> = ({
   return (
     <div
       data-tauri-drag-region
-      className={`h-10 w-full bg-[#0f1117]/95 border-b border-white/5 flex items-center justify-between ${
+      className={`h-10 w-full bg-slate-50/95 dark:bg-[#0f1117]/95 border-b border-slate-200 dark:border-white/5 flex items-center justify-between ${
         isMac ? 'pl-[76px] pr-3' : 'px-3'
       } select-none text-xs shrink-0 z-40 backdrop-blur-md`}
     >
       {/* Left: App Brand & (Windows only) Menus */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5 text-cyan-400 font-semibold tracking-wide cursor-default">
-          <Camera className="w-4 h-4 text-cyan-400" />
-          <span className="text-white text-sm font-bold">VXPhotos</span>
+        <div className="flex items-center gap-1.5 text-cyan-600 dark:text-cyan-400 font-semibold tracking-wide cursor-default">
+          <Camera className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+          <span className="text-slate-900 dark:text-white text-sm font-bold">VXPhotos</span>
         </div>
 
         {/* Menu Bar Items (Visible only on Windows / Linux) */}
         {!isMac && (
-          <div ref={menuRef} className="flex items-center gap-0.5 ml-2 text-slate-300">
+          <div ref={menuRef} className="flex items-center gap-0.5 ml-2 text-slate-700 dark:text-slate-300">
             {Object.keys(menus).map((menuKey) => (
               <div key={menuKey} className="relative">
                 <button
@@ -120,15 +120,15 @@ export const WindowBar: React.FC<WindowBarProps> = ({
                       setActiveMenu(menuKey);
                     }
                   }}
-                  className={`px-2 py-1 rounded text-xs transition-colors hover:bg-white/10 hover:text-white ${
-                    activeMenu === menuKey ? 'bg-white/15 text-cyan-300' : ''
+                  className={`px-2 py-1 rounded text-xs transition-colors hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white ${
+                    activeMenu === menuKey ? 'bg-slate-200 dark:bg-white/15 text-cyan-800 dark:text-cyan-300 font-semibold' : ''
                   }`}
                 >
                   {menuKey}
                 </button>
 
                 {activeMenu === menuKey && (
-                  <div className="absolute left-0 top-full mt-1 min-w-[220px] rounded-md glass-dropdown py-1 z-50 shadow-2xl border border-white/10 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="absolute left-0 top-full mt-1 min-w-[220px] rounded-md glass-dropdown py-1 z-50 shadow-2xl border border-slate-200 dark:border-white/10 animate-in fade-in zoom-in-95 duration-100">
                     {menus[menuKey].map((item, idx) => (
                       <button
                         key={idx}
@@ -136,7 +136,7 @@ export const WindowBar: React.FC<WindowBarProps> = ({
                           item.action();
                           setActiveMenu(null);
                         }}
-                        className="w-full text-left px-3 py-1.5 flex items-center justify-between text-xs hover:bg-cyan-500/20 hover:text-cyan-200 transition-colors"
+                        className="w-full text-left px-3 py-1.5 flex items-center justify-between text-xs hover:bg-cyan-50 dark:hover:bg-cyan-500/20 text-slate-800 dark:text-slate-200 hover:text-cyan-900 dark:hover:text-cyan-200 transition-colors"
                       >
                         <span>{item.label}</span>
                         {item.shortcut && (
@@ -156,39 +156,39 @@ export const WindowBar: React.FC<WindowBarProps> = ({
       <div className="flex items-center gap-1.5">
         <button
           onClick={onOpenFolder}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 transition-all active:scale-95 text-xs font-medium mr-2"
-          title="Chọn thư mục ảnh (Cmd/Ctrl+O)"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-300 dark:bg-cyan-500/15 dark:hover:bg-cyan-500/25 dark:text-cyan-300 dark:border-cyan-500/30 transition-all active:scale-95 text-xs font-medium mr-2 shadow-2xs"
+          title={t('openFolder', language)}
         >
           <FolderOpen className="w-3.5 h-3.5" />
-          <span>Mở thư mục</span>
+          <span>{t('openFolder', language)}</span>
         </button>
 
         <button
           onClick={onOpenSettings}
-          className="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-slate-200 transition-colors"
-          title="Cài đặt & Giới thiệu (Cmd/Ctrl+,)"
+          className="p-1.5 rounded hover:bg-slate-200/70 dark:hover:bg-white/10 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+          title={t('settings', language)}
         >
           <Settings className="w-3.5 h-3.5" />
         </button>
 
         {/* Windows style window controls (Hidden on macOS) */}
         {!isMac && (
-          <div className="flex items-center ml-2 border-l border-white/10 pl-2">
+          <div className="flex items-center ml-2 border-l border-slate-200 dark:border-white/10 pl-2">
             <button
               onClick={handleMinimize}
-              className="p-1 hover:bg-white/10 text-slate-400 hover:text-white rounded transition-colors"
+              className="p-1 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded transition-colors"
             >
               <Minus className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={handleMaximize}
-              className="p-1 hover:bg-white/10 text-slate-400 hover:text-white rounded transition-colors"
+              className="p-1 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded transition-colors"
             >
               <Square className="w-3 h-3" />
             </button>
             <button
               onClick={handleClose}
-              className="p-1 hover:bg-rose-500 hover:text-white text-slate-400 rounded transition-colors"
+              className="p-1 hover:bg-rose-500 hover:text-white text-slate-500 dark:text-slate-400 rounded transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>

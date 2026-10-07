@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Camera, Keyboard, Info, Sliders, ExternalLink, Moon, Sun, Monitor } from 'lucide-react';
-import { t } from '../i18n/translations';
+import { t, Language } from '../i18n/translations';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -8,8 +8,8 @@ interface SettingsModalProps {
   onClearCache: () => void;
   theme: 'system' | 'dark' | 'light' | 'black';
   onThemeChange: (theme: 'system' | 'dark' | 'light' | 'black') => void;
-  language: 'vi' | 'en';
-  onLanguageChange: (lang: 'vi' | 'en') => void;
+  language: Language;
+  onLanguageChange: (lang: Language) => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -24,6 +24,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [activeTab, setActiveTab] = useState<'general' | 'shortcuts' | 'about'>('general');
 
   if (!isOpen) return null;
+
+  const shortcutItems = [
+    { key: 'Click Thumbnail / X', desc: t('sc_toggle_mark', language) },
+    { key: 'Click Card Info', desc: t('sc_focus_select', language) },
+    { key: 'Shift + Click', desc: t('sc_range_mark', language) },
+    { key: 'Esc', desc: t('sc_unmark_all', language) },
+    { key: 'Space', desc: t('sc_quick_look', language) },
+    { key: 'Double Click / Enter', desc: t('sc_system_viewer', language) },
+    { key: '↑ ↓ ← →', desc: t('sc_navigate', language) },
+    { key: 'R', desc: t('sc_lossless_rotate', language) },
+    { key: 'Cmd/Ctrl + R', desc: t('sc_batch_rename', language) },
+    { key: 'Cmd/Ctrl + A', desc: t('sc_select_all', language) },
+    { key: 'Cmd/Ctrl + B', desc: t('sc_toggle_sidebar', language) },
+    { key: 'Cmd/Ctrl + I', desc: t('sc_toggle_info', language) },
+    { key: 'Cmd/Ctrl + 1 / 2', desc: t('sc_switch_view', language) },
+    { key: 'Cmd/Ctrl + O', desc: t('sc_open_folder', language) },
+  ];
 
   return (
     <div
@@ -109,10 +126,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs transition-all text-left ${
                           isSelected
                             ? 'bg-cyan-50/90 dark:bg-cyan-500/20 border-cyan-500 text-cyan-900 dark:text-cyan-200 font-semibold shadow-xs ring-1 ring-cyan-500/30'
-                            : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/5 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10'
+                            : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/20 hover:bg-slate-100 dark:hover:bg-white/10'
                         }`}
                       >
-                        <Icon className="w-4 h-4 shrink-0 text-cyan-600 dark:text-cyan-400" />
+                        <Icon className="w-4 h-4 shrink-0 text-cyan-700 dark:text-cyan-400" />
                         <span>{tItem.label}</span>
                       </button>
                     );
@@ -137,7 +154,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs transition-all ${
                           isSelected
                             ? 'bg-cyan-50/90 dark:bg-cyan-500/20 border-cyan-500 text-cyan-900 dark:text-cyan-200 font-semibold shadow-xs ring-1 ring-cyan-500/30'
-                            : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/5 text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10'
+                            : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/20 hover:bg-slate-100 dark:hover:bg-white/10'
                         }`}
                       >
                         <span>{lang.label}</span>
@@ -149,33 +166,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               {/* Drag and Drop hint */}
               <div className="bg-slate-50/70 dark:bg-[#0f1117] p-3.5 rounded-xl border border-slate-200 dark:border-white/5 space-y-1.5">
-                <span className="font-semibold text-slate-900 dark:text-white block">Thao tác Kéo Thả vào Thư mục</span>
+                <span className="font-semibold text-slate-900 dark:text-white block">{t('dragDropTitle', language)}</span>
                 <span className="text-slate-600 dark:text-slate-400 text-[11px] block leading-relaxed">
-                  Mặc định: Di chuyển tệp tin (Move). Giữ phím Option (Mac) hoặc Alt (Win) khi thả để Sao chép (Copy).
+                  {t('dragDropDesc', language)}
                 </span>
               </div>
 
               {/* Auto rename naming scheme */}
               <div className="bg-slate-50/70 dark:bg-[#0f1117] p-3.5 rounded-xl border border-slate-200 dark:border-white/5 space-y-1.5">
-                <span className="font-semibold text-slate-900 dark:text-white block">Quy chuẩn Tên tệp Tự động</span>
+                <span className="font-semibold text-slate-900 dark:text-white block">{t('renameStandardTitle', language)}</span>
                 <span className="text-slate-600 dark:text-slate-400 text-[11px] block leading-relaxed">
-                  Định dạng chuẩn: <code className="text-cyan-700 dark:text-cyan-300 font-mono font-medium">YYYYMMDD_HHMM_xx.ext</code> (tự động phân giải microsecond và tên gốc để giữ thứ tự).
+                  {t('renameStandardDesc', language)}
                 </span>
               </div>
 
               {/* Clear Cache */}
               <div className="bg-slate-50/70 dark:bg-[#0f1117] p-3.5 rounded-xl border border-slate-200 dark:border-white/5 flex items-center justify-between">
                 <div>
-                  <span className="font-semibold text-slate-900 dark:text-white block">Bộ nhớ đệm (Cache)</span>
+                  <span className="font-semibold text-slate-900 dark:text-white block">{t('cacheTitle', language)}</span>
                   <span className="text-slate-600 dark:text-slate-400 text-[11px] block">
-                    Làm mới cache metadata và thumbnail tạm thời
+                    {t('cacheDesc', language)}
                   </span>
                 </div>
                 <button
                   onClick={onClearCache}
                   className="px-3.5 py-1.5 rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/20 text-slate-800 dark:text-slate-200 transition-colors font-medium text-xs shadow-2xs"
                 >
-                  Xóa Cache
+                  {t('clearCacheBtn', language)}
                 </button>
               </div>
             </div>
@@ -183,22 +200,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {activeTab === 'shortcuts' && (
             <div className="space-y-2">
-              {[
-                { key: 'Click Thumbnail / X', desc: 'Đánh dấu chọn ảnh (Toggle Mark với dấu Tick giữa ảnh)' },
-                { key: 'Click Thông tin dưới', desc: 'Chọn tiêu điểm xem trước (Focus selection)' },
-                { key: 'Shift + Click', desc: 'Đánh dấu dải ảnh liên tiếp từ ảnh trước đó (Range Marking)' },
-                { key: 'Esc', desc: 'Hủy đánh dấu toàn bộ ảnh đang chọn (Unmark All)' },
-                { key: 'Space', desc: 'Bật / Tắt xem nhanh ảnh phóng to (Quick Look / Peek HUD)' },
-                { key: 'Double Click / Enter', desc: 'Mở ảnh bằng Trình xem mặc định hệ thống (Preview.app / Win Photos)' },
-                { key: 'Mũi tên ↑ ↓ ← →', desc: 'Di chuyển con trỏ tiêu điểm qua lại giữa các ảnh' },
-                { key: 'R', desc: 'Xoay 90° cùng chiều kim đồng hồ không giảm chất lượng (Lossless DCT)' },
-                { key: 'Cmd/Ctrl + R', desc: 'Mở hộp thoại đổi tên hàng loạt (Batch Rename)' },
-                { key: 'Cmd/Ctrl + A', desc: 'Đánh dấu tất cả các ảnh đang hiển thị' },
-                { key: 'Cmd/Ctrl + B', desc: 'Bật / Tắt cây thư mục bên trái (Left Sidebar)' },
-                { key: 'Cmd/Ctrl + I', desc: 'Bật / Tắt ngăn thông tin chi tiết EXIF (Right Drawer)' },
-                { key: 'Cmd/Ctrl + 1 / 2', desc: 'Chuyển đổi giữa chế độ Lưới (Grid) và Bảng (Detail)' },
-                { key: 'Cmd/Ctrl + O', desc: 'Chọn và mở thư mục ảnh mới' },
-              ].map((item, idx) => (
+              {shortcutItems.map((item, idx) => (
                 <div
                   key={idx}
                   className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50/80 dark:bg-[#0f1117] border border-slate-200 dark:border-white/5 text-slate-700 dark:text-slate-300"
@@ -222,11 +224,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">VXPhotos Desktop</h3>
-                <span className="text-xs text-slate-500 dark:text-slate-400">Phiên bản 1.0.0 (zTools Suite)</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">{t('aboutVersion', language)}</span>
               </div>
 
               <p className="text-slate-600 dark:text-slate-400 text-xs max-w-sm mx-auto leading-relaxed">
-                Tiện ích tuyển chọn và phân loại ảnh cá nhân siêu nhẹ, hỗ trợ lọc theo siêu dữ liệu EXIF máy ảnh, xoay Lossless DCT và đổi tên hàng loạt an toàn.
+                {t('aboutDesc', language)}
               </p>
 
               <div className="pt-2">
