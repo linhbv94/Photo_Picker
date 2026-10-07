@@ -33,4 +33,4 @@ Bộ đặc tả được xây dựng đầy đủ theo chuẩn hệ thống cô
 
 ## Phát hành Windows/macOS và tự cập nhật
 
-Phiên bản `1.0.6` thêm kiểm tra cập nhật khi mở app và nút cập nhật trong Cài đặt → Giới thiệu. GitHub Actions build bộ cài Windows x64, macOS Apple Silicon và Intel bằng runner tiêu chuẩn cho repo public. Xem [hướng dẫn cấu hình khóa ký, phát hành và cài đặt](docs/release_guide.md).
+Phiên bản `1.0.7` thêm kiểm tra cập nhật khi mở app và nút cập nhật trong Cài đặt → Giới thiệu. GitHub Actions build bộ cài Windows x64, macOS Apple Silicon và Intel bằng runner tiêu chuẩn cho repo public. Xem [hướng dẫn cấu hình khóa ký, phát hành và cài đặt](docs/release_guide.md).
