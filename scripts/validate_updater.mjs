@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync, appendFileSync, writeFileSync } from 'node:fs';
+import { validateAssetLayout } from './release_layout.mjs';
 
 const manifest = JSON.parse(readFileSync(process.argv[2], 'utf8'));
 const config = JSON.parse(readFileSync('src-tauri/tauri.conf.json', 'utf8'));
@@ -43,7 +44,8 @@ for (const platform of ['darwin-aarch64', 'darwin-x86_64', 'windows-x86_64']) {
   assert.ok(platform.startsWith('windows') ? assetName.endsWith('.exe') : assetName.endsWith('.app.tar.gz'), `Wrong installer format: ${platform}`);
 }
 assert.ok(release.assets.filter((asset) => asset.name.endsWith('.dmg')).length >= 2, 'Missing first-install macOS DMGs');
+if (process.env.RELEASE_STRICT_LAYOUT === 'true') validateAssetLayout(config, manifest, release.assets);
 writeFileSync(process.argv[2], JSON.stringify(manifest, null, 2) + '\n');
-const summary = `### ${config.productName} ${tag}\n\nAll three platforms and their signed updater packages are present.\n\n[Open draft release](https://github.com/${repo}/releases) → smoke test → **Publish release**.\n\nStandard public runners only. No Actions caches or workflow artifacts were uploaded.\n`;
+const summary = `### ${config.productName} ${tag}\n\nManifest and package metadata validated. Metadata checks do not prove signatures; the finalization step verifies them separately.\n\n[Open release](https://github.com/${repo}/releases)\n`;
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
 console.log('Manifest valid for Windows x64, macOS Apple Silicon and macOS Intel. Release remains a draft.');

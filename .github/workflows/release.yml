@@ -28,14 +28,16 @@ jobs:
     outputs:
       release_id: ${{ steps.draft.outputs.release_id }}
       tag: ${{ steps.draft.outputs.tag }}
+      asset_prefix: ${{ steps.draft.outputs.asset_prefix }}
     steps:
       - uses: actions/checkout@v5
         with:
           ref: refs/tags/${{ inputs.tag || github.ref_name }}
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
+          package-manager-cache: false
       - name: Check versions and signing configuration
         env:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
@@ -62,12 +64,15 @@ jobs:
           - runner: windows-2022
             target: x86_64-pc-windows-msvc
             bundles: nsis
+            asset_platform: windows_x64
           - runner: macos-15
             target: aarch64-apple-darwin
             bundles: app,dmg
+            asset_platform: macos_silicon
           - runner: macos-15-intel
             target: x86_64-apple-darwin
             bundles: app,dmg
+            asset_platform: macos_intel
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     steps:
@@ -75,9 +80,10 @@ jobs:
         with:
           ref: refs/tags/${{ needs.prepare.outputs.tag }}
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
+          package-manager-cache: false
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -101,6 +107,7 @@ jobs:
           # Signatures remain embedded in latest.json; omit duplicate standalone files.
           uploadUpdaterSignatures: false
           uploadWorkflowArtifacts: false
+          releaseAssetNamePattern: '${{ needs.prepare.outputs.asset_prefix }}_[version]_${{ matrix.asset_platform }}[_setup][ext]'
           args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} -- --locked
 
   validate:
@@ -115,15 +122,15 @@ jobs:
         with:
           ref: refs/tags/${{ needs.prepare.outputs.tag }}
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - name: Validate complete update manifest
+          package-manager-cache: false
+      - name: Validate layout, verify signatures and finalize user notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
           RELEASE_ID: ${{ needs.prepare.outputs.release_id }}
         run: |
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern latest.json --dir "$RUNNER_TEMP/vx_updater"
-          node scripts/validate_updater.mjs "$RUNNER_TEMP/vx_updater/latest.json"
-          gh release upload "$RELEASE_TAG" "$RUNNER_TEMP/vx_updater/latest.json" --repo "$GITHUB_REPOSITORY" --clobber
+          node scripts/finalize_release.mjs "$RUNNER_TEMP/vx_updater/latest.json"
