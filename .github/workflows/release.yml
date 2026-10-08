@@ -98,7 +98,8 @@ jobs:
           prerelease: false
           uploadUpdaterJson: true
           updaterJsonPreferNsis: true
-          uploadUpdaterSignatures: true
+          # Signatures remain embedded in latest.json; omit duplicate standalone files.
+          uploadUpdaterSignatures: false
           uploadWorkflowArtifacts: false
           args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} -- --locked
 
