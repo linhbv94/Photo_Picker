@@ -82,19 +82,88 @@ fn rotate_single_file(path: &Path, degrees: i32) -> Result<(), String> {
 
     #[cfg(target_os = "windows")]
     {
+        use std::io::Write;
+        use std::os::windows::process::CommandExt;
         use std::process::Command;
-        let script = match degrees {
-            90 => "[System.Reflection.Assembly]::LoadWithPartialName('System.Drawing') | Out-Null; $img = [System.Drawing.Image]::FromFile($args[0]); $img.RotateFlip([System.Drawing.RotateFlipType]::Rotate90FlipNone); $img.Save($args[0]); $img.Dispose()",
-            180 => "[System.Reflection.Assembly]::LoadWithPartialName('System.Drawing') | Out-Null; $img = [System.Drawing.Image]::FromFile($args[0]); $img.RotateFlip([System.Drawing.RotateFlipType]::Rotate180FlipNone); $img.Save($args[0]); $img.Dispose()",
-            270 => "[System.Reflection.Assembly]::LoadWithPartialName('System.Drawing') | Out-Null; $img = [System.Drawing.Image]::FromFile($args[0]); $img.RotateFlip([System.Drawing.RotateFlipType]::Rotate270FlipNone); $img.Save($args[0]); $img.Dispose()",
+
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        let rot_type = match degrees {
+            90 => "Rotate90FlipNone",
+            180 => "Rotate180FlipNone",
+            270 => "Rotate270FlipNone",
             _ => return Ok(()),
         };
-        let _ = Command::new("powershell")
+
+        let script = format!(
+            r#"$ErrorActionPreference = 'Stop';
+[Console]::InputEncoding = New-Object System.Text.UTF8Encoding($false);
+$p = [Console]::In.ReadLine();
+if ([string]::IsNullOrWhiteSpace($p) -or -not [System.IO.File]::Exists($p)) {{
+    Write-Error "Invalid or missing file path: $p";
+    exit 1;
+}}
+Add-Type -AssemblyName System.Drawing;
+$ext = [System.IO.Path]::GetExtension($p);
+$dir = [System.IO.Path]::GetDirectoryName($p);
+$rand = [System.Guid]::NewGuid().ToString('N');
+$tmp = [System.IO.Path]::Combine($dir, ".tmp_rot_" + $rand + $ext);
+try {{
+    $bytes = [System.IO.File]::ReadAllBytes($p);
+    $ms = New-Object System.IO.MemoryStream(,$bytes);
+    try {{
+        $img = [System.Drawing.Image]::FromStream($ms);
+        try {{
+            $img.RotateFlip([System.Drawing.RotateFlipType]::{});
+            $img.Save($tmp, $img.RawFormat);
+        }} finally {{
+            $img.Dispose();
+        }}
+    }} finally {{
+        $ms.Dispose();
+    }}
+    if ([System.IO.File]::Exists($tmp)) {{
+        [System.IO.File]::Copy($tmp, $p, $true);
+        [System.IO.File]::Delete($tmp);
+    }} else {{
+        throw "Failed to save rotated image to temp file";
+    }}
+}} catch {{
+    if ([System.IO.File]::Exists($tmp)) {{
+        [System.IO.File]::Delete($tmp);
+    }}
+    Write-Error $_;
+    exit 1;
+}}"#,
+            rot_type
+        );
+
+        let mut child = Command::new("powershell")
+            .creation_flags(CREATE_NO_WINDOW)
             .arg("-NoProfile")
+            .arg("-NonInteractive")
+            .arg("-WindowStyle")
+            .arg("Hidden")
             .arg("-Command")
             .arg(script)
-            .arg(path)
-            .output();
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .map_err(|e| format!("Lỗi khởi chạy PowerShell: {}", e))?;
+
+        if let Some(mut stdin) = child.stdin.take() {
+            writeln!(stdin, "{}", path.display())
+                .map_err(|e| format!("Lỗi truyền đường dẫn ảnh tới PowerShell: {}", e))?;
+        }
+
+        let output = child
+            .wait_with_output()
+            .map_err(|e| format!("Lỗi thực thi PowerShell: {}", e))?;
+
+        if !output.status.success() {
+            let err = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("Lỗi rotate ảnh trên Windows: {}", err.trim()));
+        }
         Ok(())
     }
 

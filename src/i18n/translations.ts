@@ -48,9 +48,14 @@ export const translations = {
 
     // Batch Action Bar
     selectedCount: 'ĐÃ CHỌN {count} ẢNH',
-    rotate90: 'Xoay 90°',
-    batchRenameBtn: 'Đổi tên hàng loạt',
-    moveTo: 'Chuyển vào...',
+    rotate90: 'Xoay 90° (R)',
+    batchRenameBtn: 'Đổi tên hàng loạt (Cmd/Ctrl+R)',
+    copyFiles: 'Sao chép vào Clipboard (Cmd/Ctrl+C)',
+    cutFiles: 'Cắt tệp vào Clipboard (Cmd/Ctrl+X)',
+    toastCopiedN: '📋 Đã copy {count} ảnh vào Clipboard',
+    toastCutN: '✂️ Đã cắt {count} ảnh vào Clipboard (Nhấn Option+Cmd+V để di chuyển trong Finder)',
+    toastCutN_Win: '✂️ Đã cắt {count} ảnh vào Clipboard (Nhấn Ctrl+V để di chuyển trong File Explorer)',
+    moveTo: 'Chuyển vào thư mục con...',
     copyTo: 'Sao chép vào...',
     cancelSelection: 'Hủy chọn tất cả (Esc)',
     chooseSubfolder: 'Chọn thư mục đích:',
@@ -132,7 +137,13 @@ export const translations = {
 
     // About Tab
     aboutVersion: 'Phiên bản 1.0.0 (zTools Suite)',
-    aboutDesc: 'Tiện ích tuyển chọn và phân loại ảnh cá nhân siêu nhẹ, hỗ trợ lọc theo siêu dữ liệu EXIF máy ảnh, xoay Lossless DCT và đổi tên hàng loạt an toàn.',
+    aboutAuthor: 'by Viet Linh Bui',
+    aboutAppTagline: 'Tiện ích tuyển chọn & phân loại ảnh siêu nhẹ (EXIF & Lossless)',
+    aboutDesc: 'Tiện ích tuyển chọn, phân loại ảnh theo EXIF, xoay lossless và đổi tên hàng loạt an toàn. Tối ưu cho nhiếp ảnh gia và người dùng cần xử lý nhanh khối lượng ảnh lớn với phím tắt linh hoạt.',
+    supportCoffee: 'Mời tôi ly coffee',
+    supportPlaceholder: 'Khu vực QR ủng hộ tác giả (Placeholder)',
+    resetDefaults: 'Mặc định',
+    closeBtn: 'Đóng',
 
     // Batch Rename Modal
     batchRenameTitle: 'Xem trước Đổi tên Hàng loạt',
@@ -221,9 +232,14 @@ export const translations = {
 
     // Batch Action Bar
     selectedCount: '{count} SELECTED',
-    rotate90: 'Rotate 90°',
-    batchRenameBtn: 'Batch Rename',
-    moveTo: 'Move to...',
+    rotate90: 'Rotate 90° (R)',
+    batchRenameBtn: 'Batch Rename (Cmd/Ctrl+R)',
+    copyFiles: 'Copy to Clipboard (Cmd/Ctrl+C)',
+    cutFiles: 'Cut to Clipboard (Cmd/Ctrl+X)',
+    toastCopiedN: '📋 Copied {count} photos to Clipboard',
+    toastCutN: '✂️ Cut {count} photos to Clipboard (Press Option+Cmd+V to move in Finder)',
+    toastCutN_Win: '✂️ Cut {count} photos to Clipboard (Press Ctrl+V to move in File Explorer)',
+    moveTo: 'Move to subfolder...',
     copyTo: 'Copy to...',
     cancelSelection: 'Deselect all (Esc)',
     chooseSubfolder: 'Select destination folder:',
@@ -305,7 +321,13 @@ export const translations = {
 
     // About Tab
     aboutVersion: 'Version 1.0.0 (zTools Suite)',
-    aboutDesc: 'Ultra-lightweight personal photo culling and triage tool with camera EXIF filtering, lossless DCT rotation, and safe batch renaming.',
+    aboutAuthor: 'by Viet Linh Bui',
+    aboutAppTagline: 'Ultra-lightweight photo culling & triage utility (EXIF & Lossless)',
+    aboutDesc: 'Lightweight utility for selecting and organizing photos by EXIF, lossless rotation, and safe batch renaming. Optimized for photographers and power users managing large photo libraries with keyboard shortcuts.',
+    supportCoffee: 'Buy me a coffee',
+    supportPlaceholder: 'Support the developer (QR placeholder)',
+    resetDefaults: 'Reset Defaults',
+    closeBtn: 'Close',
 
     // Batch Rename Modal
     batchRenameTitle: 'Batch Rename Preview',

@@ -1,9 +1,9 @@
 # Feature Flow Specification: VXTriage (`_spec2_feature_flow`)
 
-> **Module:** Luồng Xử lý Tính năng & Máy Trạng thái (Logic & State Machine Specs)  
-> **Tài liệu cha:** [00_system_overview.md](00_system_overview.md)  
-> **Kiến trúc áp dụng:** Option C (Tauri React Shell + Rust Media Core + Native Platform Adapters)  
-> **Trạng thái:** Hoàn chỉnh (V1.1)  
+> **Module:** Luồng Xử lý Tính năng & Máy Trạng thái (Logic & State Machine Specs)
+> **Tài liệu cha:** [00_system_overview.md](00_system_overview.md)
+> **Kiến trúc áp dụng:** Option C (Tauri React Shell + Rust Media Core + Native Platform Adapters)
+> **Trạng thái:** Hoàn chỉnh (V1.1)
 
 ---
 
@@ -126,6 +126,17 @@ hủy thumbnail cũ               làm mới thumbnail tức thì
   - Hệ thống đặt cờ an toàn `trim: false` (không cắt xén pixel viền).
   - Nếu không thể thực hiện DCT mà không cắt pixel: Tự động chuyển sang phương án an toàn là **xoay cờ EXIF Orientation** thay vì ghi đè thô bạo làm mất chi tiết viền ảnh.
 - **Đối với HEIC / PNG:** PNG không có cấu trúc DCT, việc xoay được xử lý qua ma trận pixel bộ nhớ; HEIC được cập nhật trực tiếp container metadata hoặc gọi Apple ImageIO để đảm bảo chất lượng nguyên bản.
+
+### 2.2. Xử lý Cơ chế Xoay trên Windows (Headless PowerShell GDI+ & File Lock Prevention)
+- **Bản chất Xoay trên Windows:** Khác với macOS (sử dụng `sips` hoặc biến đổi DCT), trên Windows hệ thống sử dụng `System.Drawing` (GDI+ `RotateFlipType`) có sẵn của Windows để xoay và lưu lại theo định dạng gốc (`RawFormat`) mà không cần cài đặt thêm dependency nặng.
+- **Ẩn hoàn toàn cửa sổ Console:** Khi gọi lệnh quay ảnh bằng PowerShell, Rust backend kích hoạt cờ Win32 `creation_flags(0x08000000)` (`CREATE_NO_WINDOW`) cùng với `-NonInteractive -WindowStyle Hidden`, triệt tiêu hoàn toàn hiện tượng nhấp nháy cửa sổ PowerShell xanh navy.
+- **Tránh lỗi File Lock GDI+ & Tránh xung đột Tệp:**
+  1. Đường dẫn tệp được truyền an toàn qua luồng `stdin` (tránh lỗi ngắt chuỗi / dấu nháy / ký tự Unicode đặc biệt trong CLI).
+  2. Đọc toàn bộ byte của ảnh vào `[System.IO.MemoryStream]`.
+  3. Khởi tạo đối tượng `Image` từ `MemoryStream` và thực hiện `RotateFlip`.
+  4. Ghi kết quả vào một tệp tạm mang định danh ngẫu nhiên duy nhất (GUID: `.tmp_rot_<guid>.<ext>`) để tránh tuyệt đối xung đột khi xoay song song.
+  5. Đảm bảo giải phóng hoàn toàn các đối tượng bằng `.Dispose()` trong khối `try/finally`.
+  6. Copy ghi đè tệp tạm vào tệp gốc và dọn sạch tệp tạm; khối `catch` bắt lỗi có trách nhiệm xóa tệp tạm nếu có lỗi phát sinh.
 
 ---
 

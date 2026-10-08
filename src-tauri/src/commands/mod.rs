@@ -4,6 +4,7 @@ pub mod move_copy;
 pub mod platform;
 pub mod rename;
 pub mod rotate;
+pub mod clipboard;
 
 pub use fs_scan::{create_subfolder, get_subfolders, read_directory};
 pub use move_copy::move_or_copy_files;
@@ -13,3 +14,4 @@ pub use platform::{
 };
 pub use rename::{apply_batch_rename, preview_batch_rename};
 pub use rotate::rotate_lossless;
+pub use clipboard::clipboard_files;
