@@ -1,6 +1,6 @@
 {
   "name": "photo_picker",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "VXPhotos — Tiện ích desktop cá nhân siêu nhẹ, đa nền tảng phục vụ tuyển chọn, phân loại ảnh theo EXIF, xoay lossless và đổi tên hàng loạt an toàn.",
   "main": "index.js",
   "type": "module",
@@ -11,7 +11,7 @@
     "tauri": "tauri",
     "version:set": "node scripts/set_version.mjs",
     "release:check": "node scripts/validate_release.mjs",
-    "test:updates": "node --test scripts/test_updates.mjs scripts/test_release.mjs scripts/test_release_automation.mjs"
+    "test:updates": "node --test scripts/test_updates.mjs scripts/test_release.mjs scripts/test_release_automation.mjs scripts/test_windows_rotate.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.1",

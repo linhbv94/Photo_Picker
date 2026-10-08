@@ -290,6 +290,18 @@ export const tauriApi = {
     };
   },
 
+  async clipboardFiles(filePaths: string[], isCut: boolean = false): Promise<boolean> {
+    if (isTauriEnvironment()) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        return await invoke<boolean>('clipboard_files', { filePaths, isCut });
+      } catch (e) {
+        console.warn('Tauri clipboardFiles failed:', e);
+      }
+    }
+    return false;
+  },
+
   async previewBatchRename(
     filePaths: string[],
     namingPattern?: string,
@@ -424,6 +436,50 @@ export const tauriApi = {
     return () => {};
   },
 
+  async listenNativeMenuEvents(callbacks: {
+    onOpenFolder: () => void;
+    onOpenSettings: () => void;
+    onSelectAll: () => void;
+    onDeselectAll: () => void;
+    onViewGrid: () => void;
+    onViewDetail: () => void;
+    onToggleSidebar: () => void;
+    onToggleInfo: () => void;
+    onRotatePhoto: () => void;
+    onBatchRename: () => void;
+  }): Promise<UnlistenFn> {
+    if (isTauriEnvironment()) {
+      try {
+        const { listen } = await import('@tauri-apps/api/event');
+        const u1 = await listen('trigger-open-folder', () => callbacks.onOpenFolder());
+        const u2 = await listen('trigger-open-settings', () => callbacks.onOpenSettings());
+        const u3 = await listen('trigger-select-all', () => callbacks.onSelectAll());
+        const u4 = await listen('trigger-deselect-all', () => callbacks.onDeselectAll());
+        const u5 = await listen('trigger-view-grid', () => callbacks.onViewGrid());
+        const u6 = await listen('trigger-view-detail', () => callbacks.onViewDetail());
+        const u7 = await listen('trigger-toggle-sidebar', () => callbacks.onToggleSidebar());
+        const u8 = await listen('trigger-toggle-info', () => callbacks.onToggleInfo());
+        const u9 = await listen('trigger-rotate-photo', () => callbacks.onRotatePhoto());
+        const u10 = await listen('trigger-batch-rename', () => callbacks.onBatchRename());
+        return () => {
+          u1();
+          u2();
+          u3();
+          u4();
+          u5();
+          u6();
+          u7();
+          u8();
+          u9();
+          u10();
+        };
+      } catch (e) {
+        console.warn('Tauri listenNativeMenuEvents failed:', e);
+      }
+    }
+    return () => {};
+  },
+
   toAssetUrl(filePath: string, bustToken?: number): string {
     if (isTauriEnvironment()) {
       try {
@@ -435,4 +491,17 @@ export const tauriApi = {
     }
     return `https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&auto=format&fit=crop&q=80`;
   },
+
+  async startDragging(): Promise<void> {
+    if (isTauriEnvironment()) {
+      try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        await getCurrentWindow().startDragging();
+      } catch (e) {
+        console.warn('startDragging failed:', e);
+      }
+    }
+  },
 };
+
+export const startDragging = () => tauriApi.startDragging();

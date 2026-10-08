@@ -1,5 +1,5 @@
 import { AppUpdates } from './components/AppUpdates';
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   FileItem,
   SubfolderItem,
@@ -468,6 +468,49 @@ export const App: React.FC = () => {
     }
   }, [markedIds, currentFocusedItem, language, folderPath, loadFolder]);
 
+  // 8c. Copy & Cut to Clipboard
+  const handleCopyMarked = useCallback(async () => {
+    const targetIds =
+      markedIds.size > 0
+        ? Array.from(markedIds)
+        : selectedId
+        ? [selectedId]
+        : [];
+    if (targetIds.length === 0) return;
+
+    const paths = targetIds
+      .map((id) => files.find((f) => f.id === id)?.path)
+      .filter((p): p is string => Boolean(p));
+
+    if (paths.length === 0) return;
+    const ok = await tauriApi.clipboardFiles(paths, false);
+    if (ok) {
+      showToast('success', t('toastCopiedN', language, { count: paths.length }));
+    }
+  }, [markedIds, selectedId, files, language]);
+
+  const handleCutMarked = useCallback(async () => {
+    const targetIds =
+      markedIds.size > 0
+        ? Array.from(markedIds)
+        : selectedId
+        ? [selectedId]
+        : [];
+    if (targetIds.length === 0) return;
+
+    const paths = targetIds
+      .map((id) => files.find((f) => f.id === id)?.path)
+      .filter((p): p is string => Boolean(p));
+
+    if (paths.length === 0) return;
+    const ok = await tauriApi.clipboardFiles(paths, true);
+    if (ok) {
+      const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+      const msgKey = isMac ? 'toastCutN' : 'toastCutN_Win';
+      showToast('info', t(msgKey, language, { count: paths.length }));
+    }
+  }, [markedIds, selectedId, files, language]);
+
   // Drag and drop into sidebar
   const handleDragStart = (e: React.DragEvent, item: FileItem) => {
     const targetPaths = markedIds.has(item.id)
@@ -618,6 +661,16 @@ export const App: React.FC = () => {
       } else if ((e.metaKey || e.ctrlKey) && (e.key === 'o' || e.key === 'O')) {
         e.preventDefault();
         handleOpenFolder();
+      } else if ((e.metaKey || e.ctrlKey) && (e.key === 'c' || e.key === 'C')) {
+        if (markedIds.size > 0 || selectedId) {
+          e.preventDefault();
+          handleCopyMarked();
+        }
+      } else if ((e.metaKey || e.ctrlKey) && (e.key === 'x' || e.key === 'X')) {
+        if (markedIds.size > 0 || selectedId) {
+          e.preventDefault();
+          handleCutMarked();
+        }
       } else if (e.key === 'Delete' || (e.metaKey && e.key === 'Backspace')) {
         e.preventDefault();
         handleDeleteToTrash();
@@ -626,7 +679,54 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [visibleItems, currentFocusedIndex, currentFocusedItem, isRenameModalOpen, isSettingsOpen, isPreviewOpen, isInfoOpen, markedIds.size]);
+  }, [visibleItems, currentFocusedIndex, currentFocusedItem, isRenameModalOpen, isSettingsOpen, isPreviewOpen, isInfoOpen, markedIds.size, selectedId, handleCopyMarked, handleCutMarked]);
+
+  // Keep one native menu subscription while handlers read current selection/state.
+  const nativeMenuCallbacksRef = useRef<Parameters<typeof tauriApi.listenNativeMenuEvents>[0] | null>(null);
+  nativeMenuCallbacksRef.current = {
+    onOpenFolder: () => handleOpenFolder(),
+    onOpenSettings: () => setIsSettingsOpen(true),
+    onSelectAll: () => {
+      const focused = document.activeElement;
+      if (focused instanceof HTMLInputElement || focused instanceof HTMLTextAreaElement) {
+        focused.select();
+      } else if (focused instanceof HTMLElement && focused.isContentEditable) {
+        document.execCommand('selectAll');
+      } else if (!isSettingsOpen && !isRenameModalOpen && !isPreviewOpen) {
+        handleSelectAll();
+      }
+    },
+    onDeselectAll: () => { if (!isSettingsOpen && !isRenameModalOpen) handleUnmarkAll(); },
+    onViewGrid: () => setViewMode('grid'),
+    onViewDetail: () => setViewMode('detail'),
+    onToggleSidebar: () => setIsSidebarOpen((p) => !p),
+    onToggleInfo: () => setIsInfoOpen((p) => !p),
+    onRotatePhoto: () => { if (!isSettingsOpen && !isRenameModalOpen) handleRotate(90); },
+    onBatchRename: () => { if (!isSettingsOpen && !isRenameModalOpen) handleOpenBatchRename(); },
+  };
+  useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    const invoke = (key: keyof NonNullable<typeof nativeMenuCallbacksRef.current>) => () => {
+      nativeMenuCallbacksRef.current?.[key]();
+    };
+    tauriApi.listenNativeMenuEvents({
+      onOpenFolder: invoke('onOpenFolder'),
+      onOpenSettings: invoke('onOpenSettings'),
+      onSelectAll: invoke('onSelectAll'),
+      onDeselectAll: invoke('onDeselectAll'),
+      onViewGrid: invoke('onViewGrid'),
+      onViewDetail: invoke('onViewDetail'),
+      onToggleSidebar: invoke('onToggleSidebar'),
+      onToggleInfo: invoke('onToggleInfo'),
+      onRotatePhoto: invoke('onRotatePhoto'),
+      onBatchRename: invoke('onBatchRename'),
+    }).then((fn) => {
+      if (disposed) fn();
+      else unlisten = fn;
+    });
+    return () => { disposed = true; unlisten?.(); };
+  }, []);
 
   // Context Menu Helpers
   const handleItemContextMenu = (e: React.MouseEvent, item: FileItem) => {
@@ -766,6 +866,8 @@ export const App: React.FC = () => {
             language={language}
             onRotate={() => handleRotate(90)}
             onRename={handleOpenBatchRename}
+            onCopy={handleCopyMarked}
+            onCut={handleCutMarked}
             onMoveToFolder={(dest) => handleMoveFiles(dest, 'MOVE')}
             onDeleteToTrash={handleDeleteToTrash}
             onUnmarkAll={handleUnmarkAll}

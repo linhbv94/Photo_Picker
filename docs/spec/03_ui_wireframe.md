@@ -58,6 +58,20 @@ Giao diện ứng dụng chia làm 3 phân vùng chính:
   - Nút chuyển giữa `Grid View [⊞]` và `Detail View [≡]`.
   - Thanh trượt kích thước ô lưới (Zoom Slider): Cho phép thay đổi kích thước thumbnail từ **80px** (dạng siêu nhỏ để culling nhanh) đến **360px** (dạng lớn để soi chi tiết).
 
+### 2.3. Batch Action Floating HUD (Thanh Hành động Hàng loạt Tối giản)
+- **Vị trí & Hiển thị:** Nổi phía dưới cùng màn hình khi có ít nhất 1 ảnh được đánh dấu (`marked_ids.size > 0`).
+- **Nguyên tắc Thiết kế Icon-Only:**
+  - Giữ badge chỉ báo số lượng: `⚡ [N] selected` (ví dụ: `⚡ 3 selected`).
+  - Toàn bộ các nút hành động được thiết kế dạng **Icon-Only** với kích thước chuẩn 32×32px, bo góc `rounded-lg`, hover hiển thị tooltip nhãn chức năng để giữ giao diện cực kỳ gọn gàng và không chiếm dụng chiều ngang.
+- **Danh sách Hành động:**
+  - **Copy (`Cmd+C` / `Ctrl+C`):** Sao chép tệp tin vào clipboard native của hệ điều hành (Finder/Explorer).
+  - **Cut (`Cmd+X` / `Ctrl+X`):** Cắt tệp tin vào clipboard native (trên macOS hiện toast hướng dẫn dán di chuyển bằng `Option+Cmd+V`).
+  - **Xoay 90° (`R`):** Xoay tệp ảnh 90° cùng chiều kim đồng hồ không nén lại chất lượng (lossless EXIF/native rotation).
+  - **Đổi tên hàng loạt (`F2`):** Mở modal đặt lại tên file theo quy tắc tiền tố/ngày tháng/số thứ tự.
+  - **Chuyển thư mục con (`Cmd+M`):** Mở menu chọn thư mục con đích để di chuyển.
+  - **Chuyển vào thùng rác (`Delete` / `Cmd+Backspace`):** Xóa an toàn vào thùng rác hệ thống.
+  - **Bỏ chọn (`Esc`):** Đóng thanh công cụ và xóa toàn bộ đánh dấu hiện tại.
+
 ---
 
 ## 3. Đặc tả Hai Chế độ Hiển thị (Grid vs. Detail View)
