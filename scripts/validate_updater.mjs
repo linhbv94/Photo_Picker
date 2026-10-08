@@ -5,13 +5,15 @@ const manifest = JSON.parse(readFileSync(process.argv[2], 'utf8'));
 const config = JSON.parse(readFileSync('src-tauri/tauri.conf.json', 'utf8'));
 const repo = process.env.GITHUB_REPOSITORY;
 const tag = process.env.RELEASE_TAG;
-assert.ok(repo && tag, 'Missing release target');
+const releaseId = process.env.RELEASE_ID;
+assert.ok(repo && tag && /^[1-9]\d*$/.test(releaseId ?? ''), 'Missing release target or valid RELEASE_ID');
 assert.equal(manifest.version.replace(/^v/, ''), config.version);
-const response = await fetch(`https://api.github.com/repos/${repo}/releases/tags/${encodeURIComponent(tag)}`, {
+const response = await fetch(`https://api.github.com/repos/${repo}/releases/${releaseId}`, {
   headers: { Authorization: `Bearer ${process.env.GH_TOKEN}`, Accept: 'application/vnd.github+json' },
 });
 assert.ok(response.ok, `Could not read draft release: HTTP ${response.status}`);
 const release = await response.json();
+assert.equal(release.tag_name, tag, 'Release ID must belong to the requested tag');
 assert.equal(release.draft, true, 'Only draft releases may be validated');
 // tauri-action v1 may emit REST asset URLs. Public apps use direct, tag-pinned URLs.
 for (const entry of Object.values(manifest.platforms ?? {})) {

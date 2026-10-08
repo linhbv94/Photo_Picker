@@ -1,0 +1,46 @@
+name: Validate existing draft release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing draft tag matching the current app version'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop_release_${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Resolve existing draft ID
+        id: draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: node scripts/resolve_draft.mjs
+      - name: Validate and normalize existing manifest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_ID: ${{ steps.draft.outputs.release_id }}
+        run: |
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern latest.json --dir "$RUNNER_TEMP/vx_updater"
+          node scripts/validate_updater.mjs "$RUNNER_TEMP/vx_updater/latest.json"
+          gh release upload "$RELEASE_TAG" "$RUNNER_TEMP/vx_updater/latest.json" --repo "$GITHUB_REPOSITORY" --clobber
