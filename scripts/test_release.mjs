@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const config = JSON.parse(readFileSync('src-tauri/tauri.conf.json', 'utf8'));
@@ -19,13 +20,14 @@ const platforms = Object.fromEntries(['darwin-aarch64', 'darwin-x86_64', 'window
   signature: 'test_signature', url: `https://api.github.com/repos/${repo}/releases/assets/${index + 1}`,
 }]));
 function validate(manifest, release = { draft: true, assets }) {
-  const dir = mkdtempSync(join(tmpdir(), 'vx_release_test_'));
+  const dir = mkdtempSync(join(tmpdir(), 'vx_release_test_#%_'));
   try {
     const manifestPath = join(dir, 'latest.json');
     const mockPath = join(dir, 'mock_fetch.mjs');
     writeFileSync(manifestPath, JSON.stringify(manifest));
     writeFileSync(mockPath, `globalThis.fetch = async () => ({ ok: true, json: async () => (${JSON.stringify(release)}) });`);
-    const result = spawnSync(process.execPath, ['--import', mockPath, 'scripts/validate_updater.mjs', manifestPath], {
+    // The ESM loader needs a file URL for Windows drive paths and reserved characters.
+    const result = spawnSync(process.execPath, ['--import', pathToFileURL(mockPath).href, 'scripts/validate_updater.mjs', manifestPath], {
       encoding: 'utf8', env: { ...process.env, GITHUB_REPOSITORY: repo, RELEASE_TAG: tag, GH_TOKEN: 'test_only', GITHUB_STEP_SUMMARY: '' },
     });
     return { ...result, manifest: JSON.parse(readFileSync(manifestPath, 'utf8')) };

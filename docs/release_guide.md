@@ -1,6 +1,8 @@
 # Phát hành và tự cập nhật VXPhotos
 
-> Ngày cập nhật: 2026-10-07. Phiên bản đầu tiên có updater: 1.0.6.
+> Ngày cập nhật: 2026-10-07. Phiên bản bootstrap khuyến nghị: 1.0.7.
+
+Bản nháp `v1.0.6` dừng ở test Windows do đường dẫn ESM. Bản `v1.0.7` sửa lỗi này; merge PR sửa lỗi trước khi push tag mới. Chạy lại job của tag cũ vẫn dùng script cũ.
 > Repo: [linhbv94/Photo_Picker](https://github.com/linhbv94/Photo_Picker).
 
 ## 1. Cách vận hành
@@ -69,7 +71,7 @@ Repo cần bật Actions và cho phép các action trong workflow. Nếu upload 
 
 ## 4. Phát hành bản đầu tiên có updater
 
-Phiên bản đã được đồng bộ thành `1.0.6` trong npm package/lockfile và Tauri/Cargo.
+Phiên bản đã được đồng bộ thành `1.0.7` trong npm package/lockfile và Tauri/Cargo.
 Thay đổi được gửi qua PR nháp. Sau khi đã thêm secret, xem và merge PR vào `main` trên GitHub. Tiếp theo chạy ở root repo:
 
 ```sh
@@ -79,8 +81,8 @@ npm ci
 npm run test:updates
 npm run release:check
 npm run build
-git tag v1.0.6
-git push origin v1.0.6
+git tag v1.0.7
+git push origin v1.0.7
 ```
 
 Không push tag trước khi merge PR. Nhánh `main` local phải chứa updater và workflow mới.
@@ -98,7 +100,7 @@ Vào [Releases](https://github.com/linhbv94/Photo_Picker/releases), mở bản n
 Tải và kiểm tra mở app, mở thư mục/file, thao tác chính trên máy tương ứng. Sau khi job `validate` xanh và smoke test đạt, bấm **Publish release** (stable, không chọn prerelease).
 Bản nháp chưa được app đang cài nhìn thấy. Workflow cố ý không tự publish để tránh phát tán bộ cài chưa được kiểm tra thực tế.
 
-Bản cũ hiện tại chưa có updater: cần tải/cài phiên bản `1.0.6` này một lần. Từ bản này trở đi, app có thể tự tải/cài cập nhật.
+Bản cũ hiện tại chưa có updater: cần tải/cài phiên bản `1.0.7` này một lần. Từ bản này trở đi, app có thể tự tải/cài cập nhật.
 
 ## 5. Cài trên Windows và macOS
 
@@ -143,7 +145,7 @@ Nếu build lỗi, sửa code rồi ưu tiên tạo version/tag mới. Có thể
 
 ## 7. Kiểm tra trước khi coi auto-update hoàn tất
 
-- Cài release `1.0.6` trên macOS và Windows.
+- Cài release `1.0.7` trên macOS và Windows.
 - Publish một version cao hơn rồi mở bản cũ: phát hiện đúng bản mới.
 - Bấm cập nhật: tải đúng OS/CPU, cài và mở lại, badge version tăng.
 - Kiểm tra cấu hình người dùng còn nguyên, file ảnh/media không bị thay đổi do cập nhật.
