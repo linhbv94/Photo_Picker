@@ -25,10 +25,11 @@ function validate(manifest, release = { draft: true, assets }) {
     const manifestPath = join(dir, 'latest.json');
     const mockPath = join(dir, 'mock_fetch.mjs');
     writeFileSync(manifestPath, JSON.stringify(manifest));
-    writeFileSync(mockPath, `globalThis.fetch = async () => ({ ok: true, json: async () => (${JSON.stringify(release)}) });`);
+    const metadata = { id: 42, tag_name: tag, ...release };
+    writeFileSync(mockPath, `globalThis.fetch = async (url) => ({ ok: url.endsWith('/releases/42'), status: 404, json: async () => (${JSON.stringify(metadata)}) });`);
     // The ESM loader needs a file URL for Windows drive paths and reserved characters.
     const result = spawnSync(process.execPath, ['--import', pathToFileURL(mockPath).href, 'scripts/validate_updater.mjs', manifestPath], {
-      encoding: 'utf8', env: { ...process.env, GITHUB_REPOSITORY: repo, RELEASE_TAG: tag, GH_TOKEN: 'test_only', GITHUB_STEP_SUMMARY: '' },
+      encoding: 'utf8', env: { ...process.env, GITHUB_REPOSITORY: repo, RELEASE_TAG: tag, RELEASE_ID: '42', GH_TOKEN: 'test_only', GITHUB_STEP_SUMMARY: '' },
     });
     return { ...result, manifest: JSON.parse(readFileSync(manifestPath, 'utf8')) };
   } finally {
@@ -56,4 +57,49 @@ test('wrong repository, missing package and already published release fail valid
   assert.notEqual(validate(foreign).status, 0);
   assert.notEqual(validate(manifest(), { draft: true, assets: assets.filter((item) => item.id !== 3) }).status, 0);
   assert.notEqual(validate(manifest(), { draft: false, assets }).status, 0);
+});
+
+test('release ID from another tag is rejected', () => {
+  assert.notEqual(validate(manifest(), { tag_name: 'v0.0.1', draft: true, assets }).status, 0);
+});
+
+test('draft lookup uses paginated listings instead of published tag lookup', async () => {
+  const { findRelease } = await import('./find_release.mjs');
+  const original = globalThis.fetch;
+  const urls = [];
+  try {
+    globalThis.fetch = async (url) => {
+      urls.push(url);
+      assert.ok(!url.includes('/releases/tags/'));
+      return { ok: true, json: async () => url.endsWith('page=1')
+        ? Array.from({ length: 100 }, (_, id) => ({ id, tag_name: `other_${id}` }))
+        : [{ id: 42, tag_name: tag, draft: true }] };
+    };
+    assert.equal((await findRelease(repo, tag, 'test_only')).id, 42);
+    assert.equal(urls.length, 2);
+    globalThis.fetch = async () => ({ ok: false, status: 403 });
+    await assert.rejects(findRelease(repo, tag, 'test_only'), /HTTP 403/);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('prepare reuses an existing draft without creating another release', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'vx_prepare_test_'));
+  try {
+    const mockPath = join(dir, 'mock_fetch.mjs');
+    const output = join(dir, 'outputs');
+    writeFileSync(mockPath, `globalThis.fetch = async (url, options) => {
+      if (options.method === 'POST') throw new Error('Must not create another draft');
+      if (url.includes('/releases?')) return { ok: true, json: async () => ([{ id: 42, tag_name: ${JSON.stringify(tag)}, draft: true, html_url: 'https://github.com/example/repo/releases' }]) };
+      return { ok: true, json: async () => ({ private: false }) };
+    };`);
+    const result = spawnSync(process.execPath, ['--import', pathToFileURL(mockPath).href, 'scripts/prepare_release.mjs'], {
+      encoding: 'utf8', env: { ...process.env, GITHUB_REPOSITORY: repo, RELEASE_TAG: tag, GH_TOKEN: 'test_only', TAURI_SIGNING_PRIVATE_KEY: 'test_only', GITHUB_OUTPUT: output },
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readFileSync(output, 'utf8'), `release_id=42\ntag=${tag}\n`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

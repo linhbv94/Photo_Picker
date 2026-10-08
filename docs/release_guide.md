@@ -154,3 +154,10 @@ Nếu build lỗi, sửa code rồi ưu tiên tạo version/tag mới. Có thể
 
 Kiểm thử logic có trong [test_updates.mjs](../scripts/test_updates.mjs). Kiểm tra manifest có trong [validate_updater.mjs](../scripts/validate_updater.mjs); script cũng chuẩn hóa URL GitHub REST asset thành URL download public gắn đúng tag.
 Để xác nhận trọn luồng updater thật, bắt buộc có hai version đã publish và máy dùng từng OS; kiểm thử mô phỏng/build cục bộ không thay thế bước này.
+
+
+## Kiểm tra lại draft sau khi build đã thành công
+
+Nếu ba build đã đạt nhưng validator cũ báo `Could not read draft release: HTTP 404`, merge PR sửa pipeline. Không cần đổi version hoặc build lại: vào **Actions → Validate existing draft release → Run workflow**, chọn nhánh `main` và nhập tag bản nháp hiện tại. Workflow đọc release bằng ID, kiểm tra/chuẩn hóa `latest.json`, giữ nguyên bộ cài và trạng thái draft. Tag phải khớp version app của nhánh đang chạy.
+
+Run release cũ vẫn giữ trạng thái lỗi lịch sử. Run validation mới xanh cùng smoke test đạt là cơ sở để Publish bản nháp hiện có. Không bấm chạy lại workflow cũ của tag cũ: workflow đó vẫn chứa script cũ.

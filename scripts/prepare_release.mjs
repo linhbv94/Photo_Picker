@@ -1,4 +1,5 @@
 import { appendFileSync, readFileSync } from 'node:fs';
+import { findRelease } from './find_release.mjs';
 
 const repo = process.env.GITHUB_REPOSITORY;
 const tag = process.env.RELEASE_TAG;
@@ -12,13 +13,10 @@ const base = `https://api.github.com/repos/${repo}`;
 const metadata = await fetch(base, { headers });
 if (!metadata.ok || (await metadata.json()).private !== false) throw new Error('Release builds are enabled only for public repositories to keep standard runner usage free.');
 
-const existing = await fetch(`${base}/releases/tags/${encodeURIComponent(tag)}`, { headers });
-let release;
-if (existing.ok) {
-  release = await existing.json();
+let release = await findRelease(repo, tag, token);
+if (release) {
   if (!release.draft) throw new Error('This version is already published. Bump the version instead of replacing installed update packages.');
 } else {
-  if (existing.status !== 404) throw new Error(`Could not check release: HTTP ${existing.status}`);
   const result = await fetch(`${base}/releases`, {
     method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify({ tag_name: tag, name: `${config.productName} ${tag}`, draft: true, prerelease: false,
