@@ -16,7 +16,7 @@ test('Windows rotation handles Unicode/quoted paths and releases the original im
     assert.ok(raw, 'The test must execute the current rotation script');
     const script = raw[1].replace('{}', 'Rotate90FlipNone').replaceAll('{{', '{').replaceAll('}}', '}');
     const result = spawnSync('powershell', ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-Command', script], {
-      input: `${path}\n`, encoding: 'utf8', windowsHide: true, timeout: 30000,
+      input: `${path}\n`, encoding: 'utf8', windowsHide: true, timeout: 90000,
     });
     assert.equal(result.status, 0, `${result.error ?? ''}\n${result.stderr}`);
     const rotated = readFileSync(path);

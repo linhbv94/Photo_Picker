@@ -56,10 +56,12 @@ const current = await api(`/releases/${releaseId}`);
 assert.equal(current.tag_name, tag);
 assert.equal(current.draft, true, 'Never replace packages or notes of an already published release');
 execFileSync('gh', ['release', 'upload', tag, manifestPath, '--repo', repo, '--clobber'], { stdio: 'inherit', timeout: 120000 });
-await api(`/releases/${releaseId}`, {
+const updated = await api(`/releases/${releaseId}`, {
   method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ body: manifest.notes, ...(publish ? { draft: false, prerelease: false, make_latest: 'true' } : {}) }),
+  body: JSON.stringify({ tag_name: tag, body: manifest.notes, draft: !publish, prerelease: false, ...(publish ? { make_latest: 'true' } : {}) }),
 });
+assert.equal(updated.tag_name, tag, 'GitHub changed the release tag during finalization');
+assert.equal(updated.draft, !publish, 'GitHub returned an unexpected publication state');
 if (publish) {
   // A failed public check is reported after publication; never overwrite/re-publish.
   const publicUrl = `https://github.com/${repo}/releases/latest/download/latest.json`;
