@@ -92,10 +92,12 @@ Vào [Actions](https://github.com/linhbv94/Photo_Picker/actions), chờ đủ `p
 Build được chạy tuần tự để các nền tảng cùng cập nhật `latest.json` mà không ghi đè nhau.
 Vào [Releases](https://github.com/linhbv94/Photo_Picker/releases), mở bản nháp, xem asset:
 
-- Windows x64: file `setup.exe` và `.sig` tương ứng.
-- macOS Apple Silicon: DMG có `aarch64`, archive `.app.tar.gz` và `.sig`.
-- macOS Intel: DMG có `x64`/`x86_64`, archive `.app.tar.gz` và `.sig`.
+- Windows x64: file `setup.exe` dùng cho cả cài lần đầu và updater.
+- macOS Apple Silicon: DMG có `aarch64` để cài lần đầu và archive `.app.tar.gz` cho updater.
+- macOS Intel: DMG có `x64`/`x86_64` để cài lần đầu và archive `.app.tar.gz` cho updater.
 - `latest.json`: đủ `windows-x86_64`, `darwin-aarch64`, `darwin-x86_64`; URL gắn với đúng tag, chữ ký không rỗng.
+
+Tổng cộng **6 assets upload**: 1 manifest, 1 bộ cài Windows, 2 DMG và 2 archive Mac. File `.sig` vẫn được Tauri sinh và Action đọc khi tạo manifest, nhưng không upload riêng vì nội dung chữ ký đã nằm trong `latest.json`. Khi xác minh chữ ký thật, dùng trường `signature` của platform tương ứng. Hai mục Source code do GitHub tự sinh vẫn xuất hiện bên dưới. [Tauri Action](https://github.com/tauri-apps/tauri-action) xác nhận tùy chọn `uploadUpdaterSignatures` không ảnh hưởng tạo manifest.
 
 Tải và kiểm tra mở app, mở thư mục/file, thao tác chính trên máy tương ứng. Sau khi job `validate` xanh và smoke test đạt, bấm **Publish release** (stable, không chọn prerelease).
 Bản nháp chưa được app đang cài nhìn thấy. Workflow cố ý không tự publish để tránh phát tán bộ cài chưa được kiểm tra thực tế.
