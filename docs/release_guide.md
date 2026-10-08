@@ -72,3 +72,7 @@ Windows mở bộ cài. Mac chọn đúng DMG, kéo app vào Applications và m�
 - Ba build xanh chứng minh compile/package; không chứng minh UX trên thiết bị thật. Lần đầu cần test cài/mở và thao tác chính trên từng OS. Luồng updater thực tế cần bản cũ đã cài và bản cao hơn đã publish.
 
 Bản bootstrap của app là `1.0.7`. App chưa có updater cần cài thủ công một lần. Agent báo rõ nền tảng chưa thử GUI; không biến thiếu thiết bị Windows thành vòng hỏi quyền publish nếu user đã chấp nhận release sau local QA.
+
+## Khôi phục metadata draft
+
+Khi GitHub đổi draft thành `untagged...`, xác nhận release ID, tag Git và commit build thành công trước khi khôi phục `tag_name` qua API; giữ nguyên các asset đã ký. Mọi PATCH release phải truyền rõ `tag_name`, `draft` và kiểm tra response. Publish checkout app/config từ tag đã test, dùng release tooling từ commit workflow đã review để sửa metadata mà không đổi tag hay build lại app.

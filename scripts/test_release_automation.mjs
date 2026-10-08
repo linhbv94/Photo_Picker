@@ -83,8 +83,8 @@ test('publish refuses unconfirmed QA or a failed exact-commit build before downl
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
-test('finalization publishes only after verified downloads; corrupted package leaves the draft untouched', () => {
-  for (const corrupt of [false, true]) {
+test('finalization preserves the draft tag and publishes only verified packages; corruption leaves it untouched', () => {
+  for (const publish of [false, true]) for (const corrupt of [false, true]) {
     const root = mkdtempSync(join(tmpdir(), 'release_finalize_#%_'));
     try {
       const config = { productName: 'Example App', version: '2.1.0', plugins: { updater: { pubkey: publicKey } } };
@@ -115,7 +115,12 @@ test('finalization publishes only after verified downloads; corrupted package le
         syncBuiltinESMExports();
         globalThis.fetch = async (url, options = {}) => {
           if (options.method === 'HEAD') { log('public_package'); return { ok: true }; }
-          if (options.method === 'PATCH') { log('publish'); return { ok: true, json: async () => ({ draft: false }) }; }
+          if (options.method === 'PATCH') {
+            const body = JSON.parse(options.body);
+            log(body.draft === false ? 'publish' : 'finalize');
+            // GitHub draft PATCH may replace an omitted tag with an untagged ID.
+            return { ok: true, json: async () => ({ tag_name: body.tag_name ?? 'untagged_mock', draft: body.draft !== false }) };
+          }
           const value = url.includes('/actions/')
             ? { workflow_runs: [{ head_sha: 'tested_commit', event: 'push', status: 'completed', conclusion: 'success' }] }
             : url.includes('api.github.com') && url.endsWith('/releases/latest') ? { tag_name: 'v1.9.9' }
@@ -127,16 +132,16 @@ test('finalization publishes only after verified downloads; corrupted package le
       `);
       const script = new URL('./finalize_release.mjs', import.meta.url);
       const result = spawnSync(process.execPath, ['--import', pathToFileURL(mock).href, fileURLToPath(script), manifestPath], {
-        cwd: root, encoding: 'utf8', env: { ...process.env, PUBLISH_RELEASE: 'true', LOCAL_QA_PASSED: 'true', RELEASE_ID: '42', RELEASE_TAG: 'v2.1.0', GITHUB_REPOSITORY: 'example/app', GH_TOKEN: 'test_only' },
+        cwd: root, encoding: 'utf8', env: { ...process.env, PUBLISH_RELEASE: String(publish), LOCAL_QA_PASSED: 'true', RELEASE_ID: '42', RELEASE_TAG: 'v2.1.0', GITHUB_REPOSITORY: 'example/app', GH_TOKEN: 'test_only' },
       });
       const recorded = readFileSync(events, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
       if (corrupt) {
         assert.notEqual(result.status, 0);
         assert.match(result.stderr, /signature is invalid/);
-        assert.ok(!recorded.includes('upload') && !recorded.includes('publish'));
+        assert.ok(!recorded.includes('upload') && !recorded.includes('publish') && !recorded.includes('finalize'));
       } else {
         assert.equal(result.status, 0, result.stderr);
-        assert.deepEqual(recorded, ['download', 'download', 'download', 'upload', 'publish', 'public_package', 'public_package', 'public_package']);
+        assert.deepEqual(recorded, ['download', 'download', 'download', 'upload', ...(publish ? ['publish', 'public_package', 'public_package', 'public_package'] : ['finalize'])]);
         assert.ok(JSON.parse(readFileSync(manifestPath)).notes.includes('Mở thư mục nhanh hơn.'));
       }
     } finally { rmSync(root, { recursive: true, force: true }); }

@@ -38,6 +38,14 @@ jobs:
         with:
           ref: refs/tags/${{ inputs.tag }}
           persist-credentials: false
+      # App/config stays at the tested tag. Release tooling comes from the
+      # reviewed workflow revision so metadata fixes do not require rebuilding.
+      - name: Checkout reviewed release tooling
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          path: release_tools
+          persist-credentials: false
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
@@ -45,13 +53,13 @@ jobs:
       - name: Check tag and app configuration
         env:
           RELEASE_TAG: ${{ inputs.tag }}
-        run: node scripts/validate_release.mjs "$RELEASE_TAG"
+        run: node release_tools/scripts/validate_release.mjs "$RELEASE_TAG"
       - name: Resolve existing draft ID
         id: draft
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.tag }}
-        run: node scripts/resolve_draft.mjs
+        run: node release_tools/scripts/resolve_draft.mjs
       - name: Verify and publish stable release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -62,4 +70,4 @@ jobs:
           PUBLISH_RELEASE: 'true'
         run: |
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern latest.json --dir "$RUNNER_TEMP/vx_publish"
-          node scripts/finalize_release.mjs "$RUNNER_TEMP/vx_publish/latest.json"
+          node release_tools/scripts/finalize_release.mjs "$RUNNER_TEMP/vx_publish/latest.json"
