@@ -36,6 +36,9 @@ test('six assets must include distinct installers and architecture-correct updat
   const platforms = Object.fromEntries(['windows-x86_64', 'darwin-aarch64', 'darwin-x86_64'].map((platform) => [platform, { url: `https://github.com/example/app/releases/download/v2.1.0/${names[platform]}` }]));
   validateAssetLayout(config, { platforms }, assets);
   assert.throws(() => validateAssetLayout(config, { platforms }, assets.slice(0, -1)), /six/);
+  platforms['darwin-aarch64-app'] = { url: platforms['darwin-x86_64'].url };
+  assert.throws(() => validateAssetLayout(config, { platforms }, assets), /architecture/);
+  delete platforms['darwin-aarch64-app'];
   platforms['darwin-aarch64'].url = platforms['darwin-x86_64'].url;
   assert.throws(() => validateAssetLayout(config, { platforms }, assets), /architecture/);
 });

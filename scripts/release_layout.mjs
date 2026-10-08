@@ -26,9 +26,21 @@ export function validateAssetLayout(config, manifest, assets) {
   for (const name of expected) {
     assert.equal(assets.filter((asset) => asset.name === name && asset.size > 0).length, 1, `Missing or duplicate asset: ${name}`);
   }
+  const supported = {
+    'windows-x86_64': names['windows-x86_64'],
+    'windows-x86_64-nsis': names['windows-x86_64'],
+    'darwin-aarch64': names['darwin-aarch64'],
+    'darwin-aarch64-app': names['darwin-aarch64'],
+    'darwin-x86_64': names['darwin-x86_64'],
+    'darwin-x86_64-app': names['darwin-x86_64'],
+  };
   for (const platform of ['windows-x86_64', 'darwin-aarch64', 'darwin-x86_64']) {
-    const name = decodeURIComponent(new URL(manifest.platforms[platform].url).pathname.split('/').at(-1));
-    assert.equal(name, names[platform], `Wrong package architecture: ${platform}`);
+    assert.ok(manifest.platforms?.[platform], `Missing platform: ${platform}`);
+  }
+  for (const [platform, entry] of Object.entries(manifest.platforms)) {
+    assert.ok(supported[platform], `Unexpected platform: ${platform}`);
+    const name = decodeURIComponent(new URL(entry.url).pathname.split('/').at(-1));
+    assert.equal(name, supported[platform], `Wrong package architecture: ${platform}`);
   }
 }
 
