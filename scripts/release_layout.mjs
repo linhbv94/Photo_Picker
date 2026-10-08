@@ -1,0 +1,54 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+export function assetPrefix(config) {
+  const prefix = config.productName.normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  assert.ok(prefix, 'Product name must produce a non-empty asset prefix');
+  return prefix;
+}
+
+export function releaseAssets(config) {
+  const prefix = `${assetPrefix(config)}_${config.version}`;
+  return {
+    'windows-x86_64': `${prefix}_windows_x64_setup.exe`,
+    'darwin-aarch64': `${prefix}_macos_silicon.app.tar.gz`,
+    'darwin-x86_64': `${prefix}_macos_intel.app.tar.gz`,
+    siliconInstaller: `${prefix}_macos_silicon.dmg`,
+    intelInstaller: `${prefix}_macos_intel.dmg`,
+  };
+}
+
+export function validateAssetLayout(config, manifest, assets) {
+  const names = releaseAssets(config);
+  const expected = ['latest.json', ...Object.values(names)];
+  assert.equal(assets.length, expected.length, 'Release must contain exactly six uploaded assets');
+  for (const name of expected) {
+    assert.equal(assets.filter((asset) => asset.name === name && asset.size > 0).length, 1, `Missing or duplicate asset: ${name}`);
+  }
+  for (const platform of ['windows-x86_64', 'darwin-aarch64', 'darwin-x86_64']) {
+    const name = decodeURIComponent(new URL(manifest.platforms[platform].url).pathname.split('/').at(-1));
+    assert.equal(name, names[platform], `Wrong package architecture: ${platform}`);
+  }
+}
+
+// Release authors write only user-visible changes; installation links are generated.
+export function releaseNotes(config, repo, tag, notesRoot = 'docs/release_notes') {
+  assert.equal(tag, `v${config.version}`, 'Notes version must match the release tag');
+  const changes = readFileSync(`${notesRoot}/${config.version}.md`, 'utf8').trim();
+  assert.ok(changes && !/\[(?:TODO|\.\.\.)\]/i.test(changes), 'Write end-user release notes before creating the tag');
+  const names = releaseAssets(config);
+  const url = (name) => `https://github.com/${repo}/releases/download/${tag}/${name}`;
+  return `${changes}\n\n**Tải ứng dụng**\n\n- [Windows 64-bit](${url(names['windows-x86_64'])})\n- [macOS Apple Silicon (dòng chip M)](${url(names.siliconInstaller)})\n- [macOS Intel](${url(names.intelInstaller)})\n\n**Cài đặt:** Windows mở bộ cài; macOS mở DMG, kéo ${config.productName} vào Applications rồi mở từ đó. Nếu máy yêu cầu cho phép mở lần đầu, hãy xác nhận với bản tải từ trang này.\n\n**Đã cài ứng dụng?** Mở app → Kiểm tra cập nhật → Cập nhật & khởi động lại.\n`;
+}
+
+export function assertNewerVersion(version, previousTag) {
+  const parse = (value) => {
+    assert.match(value, /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/);
+    return value.replace(/^v/, '').split('.').map(BigInt);
+  };
+  const current = parse(version);
+  const previous = parse(previousTag);
+  const difference = current.findIndex((value, index) => value !== previous[index]);
+  assert.ok(difference >= 0 && current[difference] > previous[difference], 'New release must be newer than the current latest release');
+}

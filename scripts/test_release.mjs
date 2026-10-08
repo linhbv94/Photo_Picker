@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { assetPrefix } from './release_layout.mjs';
 
 const config = JSON.parse(readFileSync('src-tauri/tauri.conf.json', 'utf8'));
 const repo = new URL(config.plugins.updater.endpoints[0]).pathname.split('/').slice(1, 3).join('/');
@@ -98,7 +99,7 @@ test('prepare reuses an existing draft without creating another release', () => 
       encoding: 'utf8', env: { ...process.env, GITHUB_REPOSITORY: repo, RELEASE_TAG: tag, GH_TOKEN: 'test_only', TAURI_SIGNING_PRIVATE_KEY: 'test_only', GITHUB_OUTPUT: output },
     });
     assert.equal(result.status, 0, result.stderr);
-    assert.equal(readFileSync(output, 'utf8'), `release_id=42\ntag=${tag}\n`);
+    assert.equal(readFileSync(output, 'utf8'), `release_id=42\ntag=${tag}\nasset_prefix=${assetPrefix(config)}\n`);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
