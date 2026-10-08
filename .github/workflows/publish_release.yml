@@ -41,6 +41,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
+          package-manager-cache: false
       - name: Check tag and app configuration
         env:
           RELEASE_TAG: ${{ inputs.tag }}

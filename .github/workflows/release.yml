@@ -37,6 +37,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
+          package-manager-cache: false
       - name: Check versions and signing configuration
         env:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
@@ -82,6 +83,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
+          package-manager-cache: false
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -123,6 +125,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
+          package-manager-cache: false
       - name: Validate layout, verify signatures and finalize user notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
