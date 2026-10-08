@@ -60,14 +60,15 @@ Giao diện ứng dụng chia làm 3 phân vùng chính:
 
 ### 2.3. Batch Action Floating HUD (Thanh Hành động Hàng loạt Tối giản)
 - **Vị trí & Hiển thị:** Nổi phía dưới cùng màn hình khi có ít nhất 1 ảnh được đánh dấu (`marked_ids.size > 0`).
-- **Nguyên tắc Thiết kế Icon-Only:**
+- **Nguyên tắc Thiết kế Icon-Only & Hover Tooltips:**
   - Giữ badge chỉ báo số lượng: `⚡ [N] selected` (ví dụ: `⚡ 3 selected`).
-  - Toàn bộ các nút hành động được thiết kế dạng **Icon-Only** với kích thước chuẩn 32×32px, bo góc `rounded-lg`, hover hiển thị tooltip nhãn chức năng để giữ giao diện cực kỳ gọn gàng và không chiếm dụng chiều ngang.
+  - Toàn bộ các nút hành động được thiết kế dạng **Icon-Only** với kích thước chuẩn 32×32px, bo góc `rounded-lg`.
+  - **Hover Tooltips bắt buộc:** Mỗi nút hành động khi hover chuột vào bắt buộc hiển thị popup tooltip nổi phía trên nút (`group-hover:opacity-100 scale-100`), hiển thị rõ ràng tên chức năng và phím tắt đi kèm (ví dụ: "Xoay 90° (R)", "Đổi tên hàng loạt (Cmd+R)", "Bỏ đánh dấu (Esc)...") với nền tối tương phản cao, viền mờ và mũi tên chỉ xuống tinh tế.
 - **Danh sách Hành động:**
   - **Copy (`Cmd+C` / `Ctrl+C`):** Sao chép tệp tin vào clipboard native của hệ điều hành (Finder/Explorer).
   - **Cut (`Cmd+X` / `Ctrl+X`):** Cắt tệp tin vào clipboard native (trên macOS hiện toast hướng dẫn dán di chuyển bằng `Option+Cmd+V`).
   - **Xoay 90° (`R`):** Xoay tệp ảnh 90° cùng chiều kim đồng hồ không nén lại chất lượng (lossless EXIF/native rotation).
-  - **Đổi tên hàng loạt (`F2`):** Mở modal đặt lại tên file theo quy tắc tiền tố/ngày tháng/số thứ tự.
+  - **Đổi tên hàng loạt (`F2` / `Cmd+R`):** Mở modal đặt lại tên file theo quy tắc tiền tố/ngày tháng/số thứ tự.
   - **Chuyển thư mục con (`Cmd+M`):** Mở menu chọn thư mục con đích để di chuyển.
   - **Chuyển vào thùng rác (`Delete` / `Cmd+Backspace`):** Xóa an toàn vào thùng rác hệ thống.
   - **Bỏ chọn (`Esc`):** Đóng thanh công cụ và xóa toàn bộ đánh dấu hiện tại.
@@ -234,16 +235,24 @@ Trên Windows, hệ điều hành không có global top menu bar. Để giữ tr
 
 ---
 
-### 6.3. Khung Cài đặt & Giới thiệu (Settings & About Modal)
-Kế thừa trực tiếp kiến trúc giao diện Modal từ `media_tool`:
-- **Settings Modal (`Cmd+,` / `Ctrl+,`):** 
-  - Tùy chọn giao diện (Theme: Dark Slate `#0f1117` / Light).
-  - Hành vi mặc định khi kéo thả vào sidebar (Mặc định: Di chuyển tệp `Move`; giữ `Option`/`Alt`: Sao chép `Copy`).
-  - Cấu hình quy tắc đổi tên (Tiền tố/Hậu tố, định dạng số thứ tự 2 chữ số `_01` hoặc 3 chữ số `_001`).
-  - Quản lý bộ nhớ đệm (Clear Thumbnail Cache).
-- **About Modal:**
-  - Biểu tượng ứng dụng VXTriage, phiên bản hiện tại (v1.0.0).
-  - Tác giả, thông tin bản quyền và liên kết mã nguồn GitHub: `https://github.com/linhbv94/Photo_Picker`.
+### 6.3. Khung Cài đặt & Hỗ trợ (Settings Modal — `Cmd+,` / `Ctrl+,`)
+Kế thừa trực tiếp kiến trúc giao diện Modal và cấu trúc sidebar từ `media_tool`:
+1. **Tab Chung & Giao diện (General):**
+   - Chủ đề màu sắc (Theme: Thích ứng OS, Dark Slate, OLED Black, Light Clean).
+   - Ngôn ngữ giao diện (Tiếng Việt / English).
+   - Hành vi mặc định khi kéo thả vào sidebar (`Move` hoặc `Copy`).
+   - Quy chuẩn định dạng đổi tên tự động (`YYYYMMDD_HHMM_xx.ext`).
+   - Xóa bộ đệm cache metadata và thumbnail.
+2. **Tab Phím tắt (Shortcuts):**
+   - Danh mục tra cứu đầy đủ phím tắt thao tác nhanh (Mark, Quick Look, Xoay DCT, Đổi tên, Finder...).
+3. **Tab Cập nhật (Updates):**
+   - Thẻ hiển thị phiên bản hiện tại v{version} và tích hợp Tauri Updater kiểm tra tự động từ GitHub Releases.
+4. **Tab Giới thiệu (About):**
+   - Biểu tượng ứng dụng VXPhotos Desktop, phiên bản thật, tác giả Bùi Việt Linh, liên kết GitHub Repository.
+   - Giới thiệu ngắn công dụng tuyển chọn/phân loại và công nghệ nền tảng (Tauri 2, Rust Lossless JPEG, Virtualized Grid).
+5. **Tab Ủng hộ tác giả (Support Author):**
+   - Menu cuối cùng của sidebar với biểu tượng `Coffee` và màu amber nổi bật.
+   - Thẻ mã QR ngân hàng thật (Vietcombank, STK: `9988961694`, chủ TK: `BUI VIET LINH`, nút Sao chép STK phản hồi tức thì).
 
 ---
 

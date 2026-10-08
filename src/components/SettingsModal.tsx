@@ -1,9 +1,10 @@
 import { AppUpdates } from './AppUpdates';
 import { appVersion } from '../services/app_updater';
 import React, { useState } from 'react';
-import { X, Camera, Keyboard, Info, Sliders, ExternalLink, RotateCcw, Sparkles, Coffee, QrCode } from 'lucide-react';
+import { X, Camera, Keyboard, Info, Sliders, ExternalLink, RotateCcw, Sparkles, Coffee, Copy, Check, Heart } from 'lucide-react';
 import { t, Language } from '../i18n/translations';
 import { startDragging } from '../services/tauriApi';
+import qrImage from '../assets/qr.png';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -24,7 +25,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   language,
   onLanguageChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<'general' | 'shortcuts' | 'about'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'shortcuts' | 'updates' | 'about' | 'support'>('general');
+  const [copiedBankNumber, setCopiedBankNumber] = useState(false);
+
+  const handleCopyBankNumber = async () => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText('9988961694');
+        setCopiedBankNumber(true);
+        setTimeout(() => setCopiedBankNumber(false), 2000);
+      }
+    } catch (err) {
+      console.error('Failed to copy STK:', err);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -128,6 +142,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <span>{t('tabShortcuts', language)}</span>
             </button>
 
+            <div className="my-2 border-t border-slate-200 dark:border-white/10" />
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('updates')}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg font-medium text-left transition-all ${
+                activeTab === 'updates'
+                  ? 'bg-cyan-50 dark:bg-cyan-500/20 text-cyan-800 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-500/40 font-semibold shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-cyan-500" />
+              <span>{t('tabUpdates', language)}</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setActiveTab('about')}
@@ -139,6 +168,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             >
               <Info className="w-4 h-4" />
               <span>{t('tabAbout', language)}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('support')}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg font-medium text-left transition-all ${
+                activeTab === 'support'
+                  ? 'bg-amber-50 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 font-semibold shadow-2xs'
+                  : 'text-amber-700/90 dark:text-amber-400/90 hover:bg-amber-500/10 hover:text-amber-900 dark:hover:text-amber-200'
+              }`}
+            >
+              <Coffee className="w-4 h-4 text-amber-500 shrink-0" />
+              <span className="truncate">{t('tabSupport', language)}</span>
             </button>
           </div>
 
@@ -265,7 +307,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             )}
 
-            {/* TAB 3: ABOUT (4 frames according to standards) */}
+            {/* TAB 3: UPDATES */}
+            {activeTab === 'updates' && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-cyan-500/10 via-cyan-500/5 to-transparent border border-cyan-500/20">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-cyan-500" />
+                        <span>{t('tabUpdates', language)}</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        {language === 'vi'
+                          ? 'Kiểm tra phiên bản mới nhất và tải bản cập nhật tự động từ GitHub Releases.'
+                          : 'Check for new releases and download updates automatically from GitHub Releases.'}
+                      </p>
+                    </div>
+                    <span className="px-2.5 py-1 text-xs font-mono font-semibold bg-cyan-100 dark:bg-cyan-500/20 text-cyan-800 dark:text-cyan-300 rounded-full border border-cyan-300 dark:border-cyan-500/30">
+                      v{appVersion}
+                    </span>
+                  </div>
+                </div>
+
+                <AppUpdates language={language} />
+              </div>
+            )}
+
+            {/* TAB 4: ABOUT */}
             {activeTab === 'about' && (
               <div className="space-y-4 animate-in fade-in duration-200">
                 {/* Khung 1: Thông tin ứng dụng */}
@@ -303,11 +371,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 </div>
 
-                {/* Khung 2: Update trạng thái & kiểm tra */}
-                <AppUpdates language={language} />
-
-                {/* Khung 3: Giới thiệu ngắn 2-3 câu về công dụng / điểm nổi bật */}
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-white/5 space-y-2">
+                {/* Khung 2: Giới thiệu ngắn 2-3 câu về công dụng / điểm nổi bật */}
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-white/5 space-y-2">
                   <h4 className="text-xs uppercase tracking-wider font-semibold text-cyan-700 dark:text-cyan-400 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>{t('tabAbout', language)}</span>
@@ -317,29 +382,114 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </p>
                 </div>
 
-                {/* Khung 4: QR ủng hộ placeholder */}
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-white/5 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
-                      <Coffee className="w-3.5 h-3.5 text-amber-500" />
-                      <span>{t('supportCoffee', language)}</span>
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded bg-slate-200/60 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                      Placeholder
-                    </span>
+                {/* Khung 3: Công nghệ nền tảng */}
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-white/5 space-y-2 text-xs text-slate-600 dark:text-slate-400">
+                  <div className="font-semibold text-slate-800 dark:text-slate-200">
+                    {language === 'vi' ? 'Công nghệ nền tảng:' : 'Core Technologies:'}
                   </div>
-                  <div className="flex items-center gap-3 p-2.5 rounded-lg border border-dashed border-slate-300 dark:border-white/15 bg-white dark:bg-black/20">
-                    <div className="w-14 h-14 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-400 shrink-0">
-                      <QrCode className="w-7 h-7 text-slate-400 dark:text-slate-500" />
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Tauri v2 + Rust Core Engine (Lossless DCT JPEG, EXIF fast parser)</li>
+                    <li>React 19 + TypeScript + Virtualized Grid View</li>
+                    <li>
+                      {language === 'vi'
+                        ? 'Tích hợp trực tiếp hệ thống file Finder / Windows File Explorer'
+                        : 'Direct native file system integration with Finder / Windows File Explorer'}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 5: SUPPORT AUTHOR */}
+            {activeTab === 'support' && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                {/* Banner mở đầu ấm áp */}
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent border border-amber-500/30 flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-500/20">
+                    <Coffee className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <span>{t('supportTitle', language)}</span>
+                      <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+                    </h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                      {t('supportThankNote', language)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Card QR nổi bật và thông tin tài khoản */}
+                <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-white/10 flex flex-col sm:flex-row items-center gap-6 shadow-sm">
+                  {/* Mã QR với nền trắng tương phản cao để quét nhạy */}
+                  <div className="relative group shrink-0">
+                    <div className="w-44 h-auto p-2.5 bg-white rounded-2xl shadow-md border border-slate-200/80 flex flex-col items-center justify-center">
+                      <img
+                        src={qrImage}
+                        alt="Vietcombank QR"
+                        className="w-full h-auto object-contain rounded-lg"
+                      />
+                      <span className="text-[10px] font-semibold text-emerald-800 mt-1 font-mono">
+                        VietQR • Napas247
+                      </span>
                     </div>
-                    <div className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                      <p className="font-medium text-slate-800 dark:text-slate-200">
-                        {t('supportCoffee', language)}
-                      </p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                        {t('supportPlaceholder', language)}
-                      </p>
+                  </div>
+
+                  {/* Chi tiết thông tin ngân hàng & nút copy */}
+                  <div className="flex-1 w-full space-y-3.5 text-xs">
+                    <div>
+                      <div className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                        {language === 'vi' ? 'Ngân hàng thụ hưởng' : 'Bank'}
+                      </div>
+                      <div className="font-bold text-slate-900 dark:text-white text-sm mt-0.5">
+                        {t('supportBankName', language)}
+                      </div>
                     </div>
+
+                    <div>
+                      <div className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                        {t('supportAccName', language)}
+                      </div>
+                      <div className="font-bold text-cyan-700 dark:text-cyan-400 text-sm mt-0.5">
+                        BUI VIET LINH
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                        {t('supportAccNumber', language)}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="font-mono text-base font-bold text-slate-900 dark:text-white px-2.5 py-1 bg-white dark:bg-black/30 rounded-lg border border-slate-300 dark:border-white/15 select-all">
+                          9988961694
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleCopyBankNumber}
+                          className={`px-3 py-1.5 rounded-lg font-medium text-xs flex items-center gap-1.5 transition-all shadow-2xs ${
+                            copiedBankNumber
+                              ? 'bg-emerald-600 text-white font-semibold'
+                              : 'bg-cyan-600 hover:bg-cyan-500 text-white active:scale-95'
+                          }`}
+                        >
+                          {copiedBankNumber ? (
+                            <>
+                              <Check className="w-3.5 h-3.5" />
+                              <span>{t('supportCopied', language)}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>{t('supportCopyBtn', language)}</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 italic pt-1 border-t border-slate-200/60 dark:border-white/5">
+                      {t('supportScanHint', language)}
+                    </p>
                   </div>
                 </div>
               </div>
