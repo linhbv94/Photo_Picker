@@ -252,7 +252,7 @@ Kế thừa trực tiếp kiến trúc giao diện Modal và cấu trúc sidebar
    - Giới thiệu ngắn công dụng tuyển chọn/phân loại và công nghệ nền tảng (Tauri 2, Rust Lossless JPEG, Virtualized Grid).
 5. **Tab Ủng hộ tác giả (Support Author):**
    - Menu cuối cùng của sidebar với biểu tượng `Coffee` và màu amber nổi bật.
-   - Thẻ mã QR ngân hàng thật (Vietcombank, STK: `9988961694`, chủ TK: `BUI VIET LINH`, nút Sao chép STK phản hồi tức thì).
+   - Mã QR VietQR thật đặt giữa thẻ nền trắng tương phản cao, có nhãn VietQR • Napas247 và hướng dẫn quét bằng ứng dụng ngân hàng. Không hiển thị riêng thông tin chuyển khoản hoặc nút sao chép STK; nội dung cuộn được trong cửa sổ nhỏ.
 
 ---
 
