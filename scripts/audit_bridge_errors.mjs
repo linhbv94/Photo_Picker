@@ -4,7 +4,8 @@ import vm from 'node:vm';
 import { stripTypeScriptTypes } from 'node:module';
 import assert from 'node:assert/strict';
 
-const source = fs.readFileSync(new URL('../src/services/tauriApi.ts', import.meta.url), 'utf8');
+// Git for Windows may check out CRLF; normalize before removing static imports.
+const source = fs.readFileSync(new URL('../src/services/tauriApi.ts', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 const code = stripTypeScriptTypes(source.replace(/^import .*;\n/gm, ''), { mode: 'strip' })
   .replaceAll("import('@tauri-apps/api/core')", 'Promise.resolve(nativeStub)')
   .replaceAll('export ', '');
