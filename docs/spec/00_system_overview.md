@@ -6,8 +6,8 @@
 > **Ngày cập nhật:** 2026-10-07  
 > **Nền tảng mục tiêu:** macOS (Apple Silicon & Intel) + Windows 11+ (x64)  
 > **Mô hình Kiến trúc:** Kiến trúc 3 tầng phân định (Option C):
-> - **Tầng 1 (UI Shell — 95% Dùng chung):** Tauri v2 WebView (React 18 + TypeScript + Tailwind CSS) tuân thủ [master_theme.md](../../../master_theme.md).
-> - **Tầng 2 (Media Core — 100% Dùng chung):** Rust Native Engine (Fast File Scanner, Header-only EXIF, Lossless JPEG DCT Transformer, Atomic Renamer & Operation Journal).
+> - **Tầng 1 (UI Shell — 95% Dùng chung):** Tauri v2 WebView (React 18 + TypeScript + Tailwind CSS) tuân thủ [master_theme.md](../../../_summary/master_theme.md).
+> - **Tầng 2 (Media Core — 100% Dùng chung):** Rust Native Engine (Fast File Scanner, Header-only EXIF, JPEG EXIF Orientation Rotation, No-clobber Renamer & Operation Journal).
 > - **Tầng 3 (Platform Adapter — ~5% Đặc thù OS):**
 >   - *Trên macOS:* Tauri Swift Plugin gọi Native `QLPreviewPanel` (Quick Look chuẩn Mac), `ImageIO/QLThumbnailGenerator`, và `NSWorkspace.noteFileSystemChanged`.
 >   - *Trên Windows:* Cửa sổ Frameless Peek-like HUD Window, Windows Shell API `IShellItemImageFactory` (qua `windows-rs`), và `SHChangeNotify`.

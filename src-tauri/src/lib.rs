@@ -83,7 +83,7 @@ pub fn run() {
                     .item(&toggle_info)
                     .build()?;
 
-                let rotate_photo = MenuItemBuilder::with_id("rotate_photo", "Xoay ảnh 90° không giảm chất lượng")
+                let rotate_photo = MenuItemBuilder::with_id("rotate_photo", "Xoay JPEG 90° qua EXIF")
                     .accelerator("R")
                     .build(app)?;
                 let batch_rename = MenuItemBuilder::with_id("batch_rename", "Đổi tên hàng loạt...")
@@ -162,6 +162,9 @@ pub fn run() {
             open_native_preview,
             move_to_trash,
             clipboard_files,
+            preview_file_operation,
+            list_file_recovery,
+            restore_file_operation,
         ])
         .run(tauri::generate_context!())
         .expect("error while running VXPhotos application");

@@ -10,6 +10,8 @@ interface BatchRenameModalProps {
   onClose: () => void;
   onConfirm: () => void;
   isProcessing: boolean;
+  allowMtime: boolean;
+  onMtimeChange: (enabled: boolean) => void;
 }
 
 export const BatchRenameModal: React.FC<BatchRenameModalProps> = ({
@@ -18,7 +20,7 @@ export const BatchRenameModal: React.FC<BatchRenameModalProps> = ({
   language = 'vi',
   onClose,
   onConfirm,
-  isProcessing,
+  isProcessing, allowMtime, onMtimeChange,
 }) => {
   if (!isOpen) return null;
 
@@ -37,6 +39,7 @@ export const BatchRenameModal: React.FC<BatchRenameModalProps> = ({
           </div>
           <button
             onClick={onClose}
+            disabled={isProcessing}
             className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-white rounded-lg hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors"
           >
             <X className="w-4 h-4" />
@@ -61,6 +64,10 @@ export const BatchRenameModal: React.FC<BatchRenameModalProps> = ({
           )}
         </div>
 
+        <label className="px-5 py-3 text-xs text-amber-800 dark:text-amber-300 flex gap-2 items-start">
+          <input type="checkbox" checked={allowMtime} disabled={isProcessing} onChange={e => onMtimeChange(e.target.checked)} />
+          Cho phép dùng ngày sửa file (mtime) khi thiếu ngày chụp. mtime có thể khác ngày chụp thật.
+        </label>
         {/* Diff List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-1.5 font-mono text-xs">
           {diffItems.map((item, idx) => (
@@ -82,6 +89,7 @@ export const BatchRenameModal: React.FC<BatchRenameModalProps> = ({
                 {item.new_filename}
               </span>
 
+              <span className="text-[10px] text-slate-600 dark:text-slate-300 ml-2">{item.skip_reason || item.time_source}</span>
               {item.has_conflict && (
                 <span className="text-[10px] text-rose-700 dark:text-rose-400 bg-rose-100 dark:bg-rose-500/20 px-1.5 py-0.5 rounded ml-2 shrink-0">
                   {t('duplicateName', language)}
@@ -104,7 +112,7 @@ export const BatchRenameModal: React.FC<BatchRenameModalProps> = ({
           <button
             type="button"
             onClick={onConfirm}
-            disabled={isProcessing || conflictCount > 0}
+            disabled={isProcessing || conflictCount > 0 || !diffItems.some(i => !i.skip_reason)}
             className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 disabled:pointer-events-none text-slate-950 text-xs font-semibold shadow-xs transition-colors"
           >
             {isProcessing ? t('renamingInProgress', language) : t('confirmRenameBtn', language)}

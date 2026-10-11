@@ -34,7 +34,8 @@ pub fn read_exif_fast<P: AsRef<Path>>(path: P) -> Option<ExifMetadata> {
     let exif = exifreader.read_from_container(&mut buf_reader).ok()?;
 
     let get_field_str = |tag: exif::Tag| -> Option<String> {
-        exif.get_field(tag, exif::In::PRIMARY).map(|f| f.display_value().to_string().trim_matches('"').to_string())
+        exif.get_field(tag, exif::In::PRIMARY)
+            .map(|f| f.display_value().to_string().trim_matches('"').to_string())
     };
 
     let date_taken = get_field_str(exif::Tag::DateTimeOriginal)
@@ -42,12 +43,11 @@ pub fn read_exif_fast<P: AsRef<Path>>(path: P) -> Option<ExifMetadata> {
         .or_else(|| get_field_str(exif::Tag::DateTime));
 
     // Normalize date format from "YYYY:MM:DD HH:MM:SS" to "YYYY-MM-DD HH:MM:SS"
-    let normalized_date = date_taken.map(|d| {
-        if d.len() >= 10 && &d[4..5] == ":" && &d[7..8] == ":" {
-            format!("{}-{}-{}", &d[0..4], &d[5..7], &d[8..])
-        } else {
-            d
-        }
+    let normalized_date = date_taken.and_then(|d| {
+        chrono::NaiveDateTime::parse_from_str(&d, "%Y:%m:%d %H:%M:%S")
+            .or_else(|_| chrono::NaiveDateTime::parse_from_str(&d, "%Y-%m-%d %H:%M:%S"))
+            .ok()
+            .map(|v| v.format("%Y-%m-%d %H:%M:%S").to_string())
     });
 
     let sub_sec_time = get_field_str(exif::Tag::SubSecTimeOriginal)
@@ -58,45 +58,46 @@ pub fn read_exif_fast<P: AsRef<Path>>(path: P) -> Option<ExifMetadata> {
     let lens_model = get_field_str(exif::Tag::LensModel);
     let focal_length = get_field_str(exif::Tag::FocalLength);
 
-    let aperture_f_number = exif.get_field(exif::Tag::FNumber, exif::In::PRIMARY).and_then(|f| {
-        match &f.value {
+    let aperture_f_number = exif
+        .get_field(exif::Tag::FNumber, exif::In::PRIMARY)
+        .and_then(|f| match &f.value {
             exif::Value::Rational(v) if !v.is_empty() => Some(v[0].to_f64() as f32),
             _ => None,
-        }
-    });
+        });
 
     let exposure_time = get_field_str(exif::Tag::ExposureTime);
 
-    let iso_rating = exif.get_field(exif::Tag::PhotographicSensitivity, exif::In::PRIMARY).and_then(|f| {
-        match &f.value {
+    let iso_rating = exif
+        .get_field(exif::Tag::PhotographicSensitivity, exif::In::PRIMARY)
+        .and_then(|f| match &f.value {
             exif::Value::Short(v) if !v.is_empty() => Some(v[0] as u32),
             exif::Value::Long(v) if !v.is_empty() => Some(v[0]),
             _ => None,
-        }
-    });
+        });
 
-    let pixel_width = exif.get_field(exif::Tag::PixelXDimension, exif::In::PRIMARY).and_then(|f| {
-        match &f.value {
+    let pixel_width = exif
+        .get_field(exif::Tag::PixelXDimension, exif::In::PRIMARY)
+        .and_then(|f| match &f.value {
             exif::Value::Short(v) if !v.is_empty() => Some(v[0] as u32),
             exif::Value::Long(v) if !v.is_empty() => Some(v[0]),
             _ => None,
-        }
-    });
+        });
 
-    let pixel_height = exif.get_field(exif::Tag::PixelYDimension, exif::In::PRIMARY).and_then(|f| {
-        match &f.value {
+    let pixel_height = exif
+        .get_field(exif::Tag::PixelYDimension, exif::In::PRIMARY)
+        .and_then(|f| match &f.value {
             exif::Value::Short(v) if !v.is_empty() => Some(v[0] as u32),
             exif::Value::Long(v) if !v.is_empty() => Some(v[0]),
             _ => None,
-        }
-    });
+        });
 
-    let orientation = exif.get_field(exif::Tag::Orientation, exif::In::PRIMARY).and_then(|f| {
-        match &f.value {
+    let orientation = exif
+        .get_field(exif::Tag::Orientation, exif::In::PRIMARY)
+        .and_then(|f| match &f.value {
             exif::Value::Short(v) if !v.is_empty() => Some(v[0] as u32),
             _ => None,
-        }
-    }).unwrap_or(1);
+        })
+        .unwrap_or(1);
 
     let software = get_field_str(exif::Tag::Software);
     let color_space = get_field_str(exif::Tag::ColorSpace);

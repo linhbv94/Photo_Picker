@@ -91,6 +91,8 @@ jobs:
         run: npm ci
       - name: Test update lifecycle
         run: npm run test:updates
+      - name: Test filesystem safety and recovery
+        run: npm run test:safety
       - name: Build and upload signed updater packages
         uses: tauri-apps/tauri-action@v1
         env:

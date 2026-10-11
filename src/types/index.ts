@@ -22,6 +22,7 @@ export interface ExifMetadata {
 }
 
 export interface FileItem {
+  exif_loaded?: boolean; // UI-only: parsed without EXIF is distinct from pending
   id: string;
   path: string;
   filename: string;
@@ -48,6 +49,9 @@ export interface RenameDiffItem {
   new_path: string;
   has_conflict: boolean;
   conflict_resolution?: string;
+  preview_token?: string;
+  time_source?: string;
+  skip_reason?: string | null;
 }
 
 export type ViewMode = 'grid' | 'detail';

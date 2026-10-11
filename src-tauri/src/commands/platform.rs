@@ -52,9 +52,7 @@ pub fn open_in_system_viewer(file_path: String) -> Result<(), String> {
 
     #[cfg(target_os = "windows")]
     {
-        let _ = Command::new("cmd")
-            .args(["/C", "start", "", &file_path])
-            .spawn();
+        tauri_plugin_opener::open_path(&file_path, None::<&str>).map_err(|e| e.to_string())?;
     }
 
     Ok(())
@@ -83,17 +81,38 @@ pub fn open_native_preview(file_path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn move_to_trash(file_paths: Vec<String>) -> Result<usize, String> {
-    let mut count = 0;
-    for path_str in file_paths {
-        let p = Path::new(&path_str);
-        if !p.exists() {
-            continue;
-        }
-
-        if trash::delete(p).is_ok() {
-            count += 1;
-        }
+pub fn move_to_trash(
+    file_paths: Vec<String>,
+    confirmation_token: Option<String>,
+) -> Result<super::file_safety::OperationResult, String> {
+    use super::file_safety::*;
+    let _guard = MUTATIONS.lock().map_err(|e| e.to_string())?;
+    let plan = take_plan(
+        &confirmation_token.ok_or("Cần preview và xác nhận")?,
+        "TRASH",
+    )?;
+    if plan.entries.len() != file_paths.len()
+        || plan.entries.iter().zip(file_paths).any(|(e, p)| {
+            resolved(Path::new(&p))
+                .map(|s| s != Path::new(&e.source))
+                .unwrap_or(true)
+        })
+    {
+        return Err("Danh sách Trash đã đổi sau preview".into());
     }
-    Ok(count)
+    validate_entries(&plan.entries)?;
+    let mut result = OperationResult::default();
+    for e in plan.entries {
+        let attempt = (|| {
+            let mut j = prepare_trash(&e)?;
+            trash::delete(Path::new(&j.stage)).map_err(|err| j.problem(err))?;
+            if exists(Path::new(&e.source))? {
+                return Err(j.problem("Tệp nguồn vẫn tồn tại sau Trash"));
+            }
+            j.save("trashed").map_err(|err| j.problem(err))?;
+            Ok(j.journal_path)
+        })();
+        result.push(&e, attempt);
+    }
+    Ok(result)
 }

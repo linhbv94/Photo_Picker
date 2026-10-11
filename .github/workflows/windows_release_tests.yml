@@ -4,7 +4,8 @@ on:
   pull_request:
     paths:
       - 'scripts/**'
-      - 'src/services/update_controller.ts'
+      - 'src/**'
+      - 'src-tauri/**'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/**'
@@ -17,13 +18,17 @@ jobs:
   test:
     if: github.event.repository.private == false
     runs-on: windows-2022
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
       - uses: actions/setup-node@v5
         with:
-          node-version: '22'
+          node-version: '22.18.0'
           package-manager-cache: false
+      - uses: dtolnay/rust-toolchain@stable
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:safety
       - run: npm run test:updates
