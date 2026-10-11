@@ -1,6 +1,6 @@
 # VXPhotos — Bản sửa an toàn dữ liệu
 
-Ngày cập nhật: 2026-10-11. Nền source: 1.0.10 / `2bda37f`; bản sửa đang chuẩn bị phát hành 1.0.11. [Audit trước sửa](data_safety_audit.md) là bằng chứng lịch sử, không mô tả engine hiện tại. Trạng thái CI/publish cuối được ghi trong [báo cáo phát hành](release_1_0_11.md).
+Ngày cập nhật: 2026-10-11. Nền source: 1.0.10 / `2bda37f`; bản sửa đang chuẩn bị phát hành 1.0.12 sau draft 1.0.11 lỗi timeout harness Windows. [Audit trước sửa](data_safety_audit.md) là bằng chứng lịch sử, không mô tả engine hiện tại. Trạng thái CI/publish cuối được ghi trong [báo cáo phát hành](release_1_0_12.md).
 
 ## Thay đổi đã triển khai
 
@@ -29,7 +29,7 @@ macOS publish dùng `renameatx_np(RENAME_EXCL)` và pin hai parent directory. Wi
 - `python3 scripts/check_windows_safety.py`: core production và tests type-check target `x86_64-pc-windows-msvc` trên Mac. Đây không phải full app Windows build hoặc runtime.
 - Frontend `npm run build` đạt. Updater/release regression: 18 passed, Windows-specific test skipped trên Mac.
 - Gói native Mac debug build + codesign deep/strict đạt với updater artifacts tắt riêng cho QA; không cần khóa updater/release. GUI WKWebView đã kiểm tra preview cancel, rotate, lỗi PNG, thiếu EXIF, opt-in mtime, rename, Undo và Trash trên fixture tự tạo. Undo rotate/Trash trả đúng SHA-256 ban đầu, Trash/Undo bản cuối giữ identity, mtime và SHA-256; Delete có confirmation và scan cuối đếm đủ fixture; đóng/mở lại app vẫn đọc được journal rename và Undo tên gốc.
-- Workflow Windows đã thêm Rust tests, bridge tests và frontend build. Chưa push/dispatch nên chưa có kết quả CI Windows của thay đổi này.
+- Workflow Windows đã thêm Rust tests, bridge tests và frontend build. [PR CI 1.0.11](https://github.com/linhbv94/Photo_Picker/actions/runs/38118482590) đạt: 28 Rust Windows tests, 10 bridge cases và updater regression. Đã sửa harness để xử lý CRLF khi checkout trên Windows; kiểm tra LF/CRLF đạt. Release CI tiếp tục chạy safety tests trên cả ba targets. Đây không thay nghiệm thu Windows/WebView2 GUI.
 
 ## Giới hạn và cách dùng
 

@@ -2775,7 +2775,7 @@ dependencies = [
 
 [[package]]
 name = "photo_picker"
-version = "1.0.11"
+version = "1.0.12"
 dependencies = [
  "chrono",
  "cocoa",
