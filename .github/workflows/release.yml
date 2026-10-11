@@ -89,10 +89,12 @@ jobs:
           targets: ${{ matrix.target }}
       - name: Install frontend dependencies
         run: npm ci
-      - name: Test update lifecycle
-        run: npm run test:updates
       - name: Test filesystem safety and recovery
         run: npm run test:safety
+      # Compile and run native tests first; the updater Unicode regression
+      # then reuses the binary instead of hitting its cold-build timeout.
+      - name: Test update lifecycle
+        run: npm run test:updates
       - name: Build and upload signed updater packages
         uses: tauri-apps/tauri-action@v1
         env:
