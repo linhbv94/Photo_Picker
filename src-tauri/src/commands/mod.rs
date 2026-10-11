@@ -15,3 +15,8 @@ pub use platform::{
 pub use rename::{apply_batch_rename, preview_batch_rename};
 pub use rotate::rotate_lossless;
 pub use clipboard::clipboard_files;
+
+pub mod file_safety;
+pub mod jpeg_orientation;
+pub use file_safety::{preview_file_operation,list_file_recovery,restore_file_operation};
+#[cfg(test)] mod file_safety_tests;

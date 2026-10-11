@@ -1,102 +1,75 @@
-use serde::{Deserialize, Serialize};
-use std::fs;
+use super::file_safety::*;
 use std::path::Path;
-use uuid::Uuid;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct MoveCopyResult {
-    pub success_count: usize,
-    pub failed_paths: Vec<String>,
-}
 
 #[tauri::command]
 pub fn move_or_copy_files(
     source_paths: Vec<String>,
     destination_folder: String,
     action_type: String,
-) -> Result<MoveCopyResult, String> {
-    let dest_dir = Path::new(&destination_folder);
-    if !dest_dir.exists() || !dest_dir.is_dir() {
-        return Err("Destination folder does not exist".to_string());
+    confirmation_token: Option<String>,
+) -> Result<OperationResult, String> {
+    let _guard = MUTATIONS.lock().map_err(|e| e.to_string())?;
+    if !matches!(action_type.as_str(), "MOVE" | "COPY") {
+        return Err("Sai thao tác MOVE/COPY".into());
     }
+    let plan = take_plan(
+        &confirmation_token.ok_or("Cần preview và xác nhận")?,
+        &action_type,
+    )?;
+    let destination = std::fs::canonicalize(destination_folder).map_err(|e| e.to_string())?;
+    if plan.entries.len() != source_paths.len()
+        || plan.entries.iter().zip(source_paths).any(|(e, p)| {
+            resolved(Path::new(&p))
+                .map(|s| s != Path::new(&e.source))
+                .unwrap_or(true)
+                || Path::new(&e.target).parent() != Some(destination.as_path())
+        })
+    {
+        return Err("Nguồn/đích đã đổi sau preview".into());
+    }
+    validate_entries(&plan.entries)?;
+    let mut result = OperationResult::default();
+    for e in plan.entries {
+        result.push(&e, execute(&e, &action_type));
+    }
+    Ok(result)
+}
 
-    let is_move = action_type.to_uppercase() == "MOVE";
-    let mut success_count = 0;
-    let mut failed_paths = Vec::new();
-
-    for src_str in source_paths {
-        let src = Path::new(&src_str);
-        if !src.exists() {
-            failed_paths.push(src_str);
-            continue;
-        }
-
-        let file_name = match src.file_name() {
-            Some(name) => name,
-            None => {
-                failed_paths.push(src_str);
-                continue;
+fn execute(e: &Entry, action: &str) -> Result<String, String> {
+    unchanged(Path::new(&e.source), &e.expected)?;
+    let mut j = Journal::new(action, e)?;
+    if action == "MOVE" {
+        match rename_exclusive(Path::new(&e.source), Path::new(&e.target)) {
+            Ok(()) => {
+                unchanged(Path::new(&e.target), &e.expected).map_err(|e| j.problem(e))?;
+                sync_parent(Path::new(&e.source))?;
+                sync_parent(Path::new(&e.target))?;
+                j.save("completed").map_err(|e| j.problem(e))?;
+                return Ok(j.journal_path);
             }
-        };
-
-        let mut target = dest_dir.join(file_name);
-        if target.exists() && target != src {
-            // Generate non-colliding name: name_1.ext, name_2.ext
-            let stem = src.file_stem().and_then(|s| s.to_str()).unwrap_or("file");
-            let ext = src.extension().and_then(|e| e.to_str()).unwrap_or("");
-            let mut counter = 1;
-            loop {
-                let candidate_name = if ext.is_empty() {
-                    format!("{}_{}", stem, counter)
-                } else {
-                    format!("{}_{}.{}", stem, counter, ext)
-                };
-                let candidate_path = dest_dir.join(candidate_name);
-                if !candidate_path.exists() {
-                    target = candidate_path;
-                    break;
+            Err(error) => {
+                #[cfg(unix)]
+                let cross_volume = error.raw_os_error() == Some(libc::EXDEV);
+                #[cfg(windows)]
+                let cross_volume = error.raw_os_error() == Some(17);
+                #[cfg(not(any(unix, windows)))]
+                let cross_volume = false;
+                if !cross_volume {
+                    return Err(j.problem(error));
                 }
-                counter += 1;
-                if counter > 9999 {
-                    break;
-                }
-            }
-        }
-
-        if is_move {
-            // First attempt direct rename (fastest on same volume)
-            if fs::rename(src, &target).is_ok() {
-                success_count += 1;
-            } else {
-                // Cross-volume safe copy & remove
-                let temp_dest = dest_dir.join(format!(".tmp_copy_{}", Uuid::new_v4()));
-                if fs::copy(src, &temp_dest).is_ok() {
-                    // Verify file size
-                    let src_size = src.metadata().map(|m| m.len()).unwrap_or(0);
-                    let dest_size = temp_dest.metadata().map(|m| m.len()).unwrap_or(1);
-                    if src_size == dest_size && fs::rename(&temp_dest, &target).is_ok() {
-                        let _ = fs::remove_file(src);
-                        success_count += 1;
-                    } else {
-                        let _ = fs::remove_file(&temp_dest);
-                        failed_paths.push(src_str);
-                    }
-                } else {
-                    failed_paths.push(src_str);
-                }
-            }
-        } else {
-            // Copy mode
-            if fs::copy(src, &target).is_ok() {
-                success_count += 1;
-            } else {
-                failed_paths.push(src_str);
             }
         }
     }
-
-    Ok(MoveCopyResult {
-        success_count,
-        failed_paths,
-    })
+    copy_staged(&mut j).map_err(|e| j.problem(e))?;
+    if action == "MOVE" {
+        unchanged(Path::new(&e.source), &e.expected).map_err(|e| j.problem(e))?;
+        // Retain the original on the source volume for recovery instead of unlinking it.
+        rename_exclusive(Path::new(&e.source), Path::new(&j.backup))
+            .map_err(|err| j.problem(format!("Đã copy sang đích nhưng còn nguồn: {}", err)))?;
+        unchanged(Path::new(&j.backup), &e.expected).map_err(|e| j.problem(e))?;
+        sync_parent(Path::new(&e.source))?;
+        sync_parent(Path::new(&j.backup))?;
+    }
+    j.save("completed").map_err(|e| j.problem(e))?;
+    Ok(j.journal_path)
 }

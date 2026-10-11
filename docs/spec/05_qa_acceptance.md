@@ -77,16 +77,21 @@ And thanh công cụ dưới đáy hiện thông báo "⚡ Đã đánh dấu: 5 
 ```gherkin
 Given người dùng đang chọn hoặc đánh dấu ảnh "DSC001.JPG"
 When người dùng nhấn nút "Xoay 90° theo chiều kim đồng hồ" (hoặc bấm phím R)
-Then file tệp trên ổ cứng được biến đổi Lossless DCT mà không làm nén lại pixel
-And cờ EXIF Orientation được chuẩn hóa về 1 (Normal)
-And thời gian mtime được cập nhật và bắn tín hiệu cache invalidation cho OS
-And khi kiểm tra Finder (macOS) hoặc Explorer (Windows), thumbnail đã xoay đúng 90°.
+Then app hiển thị preview và chờ xác nhận
+When người dùng xác nhận
+Then JPEG được chỉnh EXIF Orientation, compressed stream giữ nguyên byte
+And bản gốc và journal được giữ để Undo không ghi đè file mới
+And thumbnail trong app cập nhật qua cache token
+And trình xem hỗ trợ EXIF hiển thị đúng hướng; không cam kết ép cache Finder/Explorer
+And PNG/HEIC/RAW/TIFF chưa hỗ trợ bị từ chối trước ghi
 ```
 
 ### AC-08: Kéo Thả Phân loại vào Thư mục Con ở Left Sidebar
 ```gherkin
 Given người dùng đã đánh dấu 10 ảnh trong thư mục cha
 When người dùng kéo nhóm 10 ảnh này và thả vào thư mục con "Selects" ở Left Sidebar
+Then app hiển thị danh sách và chờ xác nhận
+When người dùng xác nhận
 Then hệ thống di chuyển 10 tệp tin này vào thư mục "Selects" trên ổ cứng
 And 10 ảnh này biến mất khỏi danh sách của thư mục cha
 And thông báo Toast hiển thị "Đã chuyển 10 ảnh vào Selects thành công".
@@ -119,12 +124,12 @@ And hiển thị tọa độ GPS (Vĩ độ, Kinh độ) cùng nút liên kết 
 | Mã Edge Case | Kịch bản Thử nghiệm | Rủi ro Tiềm ẩn | Kết quả Mong đợi |
 | :--- | :--- | :--- | :--- |
 | **EC-01** | Thư mục chứa 10,000 ảnh từ thẻ nhớ SD | Quá tải RAM, đơ giao diện người dùng | Priority Scheduler: Viewport nạp thumbnail trước, background stream EXIF ngầm; RAM luôn ổn định dưới 250MB. |
-| **EC-02** | Ảnh bị lột sạch EXIF (ảnh tải từ Zalo/Facebook) | Crash parser khi đọc Date Taken | Tự động fallback về File Modified Time (`mtime`) và hiển thị nhãn "Không có EXIF". |
+| **EC-02** | Ảnh bị lột sạch EXIF (ảnh tải từ Zalo/Facebook) | Crash parser khi đọc Date Taken | Giữ nguyên tên và skip; chỉ dùng mtime khi user bật opt-in, hiển thị provenance. |
 | **EC-03** | Tệp tin nằm trên thẻ nhớ bị gạt lẫy Lock (Read-Only) | Lỗi Crash khi cố gắng Xoay ảnh hoặc Đổi tên | Báo lỗi thân thiện `ERR_READ_ONLY_FS`, không làm thay đổi trạng thái file, giữ nguyên UI. |
 | **EC-04** | Chụp Burst 15 ảnh trong cùng 1 giây | Xung đột tên file khi đổi tên theo phút | Tự động sắp xếp theo sub-second hoặc tên gốc và sinh số thứ tự `_01` đến `_15`. |
-| **EC-05** | Di chuyển file giữa 2 phân vùng khác nhau (Cross-Volume Move) | Rút ổ giữa chừng gây mất dữ liệu | Cơ chế an toàn: Copy sang `.tmp` ở đích → verify kích thước → đổi tên chính thức → mới xóa file nguồn. |
+| **EC-05** | Di chuyển file giữa 2 phân vùng khác nhau (Cross-Volume Move) | Rút ổ giữa chừng gây mất dữ liệu | Cơ chế an toàn: Copy sang `.tmp` ở đích → verify SHA-256/size + sync → publish không ghi đè → giữ original trong hồ sơ nguồn. |
 | **EC-06** | Shift-Click ngược chiều (từ item thứ 10 lên item thứ 3) | Tính sai dải slice nếu code cứng `start < end` | Thuật toán sử dụng `Math.min` và `Math.max` đảm bảo dải chọn luôn chính xác bất kể chiều click. |
-| **EC-07** | Đổi tên vòng lặp (File A → B, trong khi file B → C) | Ghi đè mất file B nếu không dùng cơ chế an toàn | Thực hiện Two-phase rename thông qua file tạm `.tmp_uuid` rồi mới chuyển sang tên đích. |
+| **EC-07** | Đổi tên vòng lặp (File A → B, trong khi file B → C) | Ghi đè mất file B nếu không dùng cơ chế an toàn | Từ chối collision/cycle trước mutation; không tự ghi đè hoặc two-phase không journal. |
 
 ---
 
@@ -148,3 +153,7 @@ And hiển thị tọa độ GPS (Vĩ độ, Kinh độ) cùng nút liên kết 
   - Đánh dấu 3 ảnh, click phải: kiểm tra menu hiển thị tác vụ áp dụng cho cả 3 ảnh.
   - Click phải vào folder ở sidebar: kiểm tra tùy chọn "Đặt làm thư mục chính", "Tạo thư mục con".
   - Click phải vào vùng trống: kiểm tra tùy chọn chuyển Grid/Detail, Refresh, Unmark All.
+
+## Safety gate hiện tại (2026-10-10)
+
+[Báo cáo kiểm chứng](../data_safety_fix_report.md) và [checklist Windows](../windows_data_safety_checklist.md) ghi rõ tests đạt và runtime chưa đạt. Build không thay nghiệm thu GUI/volume/crash phần cứng.

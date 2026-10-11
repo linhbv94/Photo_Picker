@@ -30,7 +30,7 @@
         │<── trả về asset URL / cached thumbnail path ──────────│
         │                                                       │
         │── invoke('rotate_lossless', { paths, degrees }) ─────>│
-        │                                        [Lossless DCT + Platform Notify]
+        │                                        [JPEG EXIF + Journal + No-clobber publish]
         │<── trả về kết quả xoay + bust cache token ────────────│
         │                                                       │
         │── invoke('preview_batch_rename', { paths }) ─────────>│
@@ -127,7 +127,7 @@ export interface SubfolderItem {
     is_last_chunk: boolean;      // true khi hoàn tất toàn bộ tiến trình quét ngầm
     items: Array<{
       file_id: string;
-      exif: ExifMetadata;
+      exif: ExifMetadata | null; // null = đã đọc nhưng không có EXIF; khác trạng thái pending
     }>;
   }
   ```
@@ -170,59 +170,38 @@ export interface SubfolderItem {
   }
   ```
 
-### 3.4. `rotate_lossless` — Xoay Ảnh Lossless Cập nhật Filesystem & Cache OS
-- **Request Payload:**
-  ```typescript
-  interface RotateLosslessRequest {
-    file_paths: string[];
-    degrees: 90 | 180 | 270;
-  }
-  ```
-- **Response Payload:**
-  ```typescript
-  interface RotateLosslessResponse {
-    success_count: number;
-    failed_paths: Array<{ path: string; error_message: string }>;
-    cache_bust_timestamp: number; // Timestamp để frontend cập nhật query URL (?v=...)
-  }
-  ```
+### 3.4. Transaction preview và kết quả thao tác ghi (2026-10-10)
 
-### 3.5. `preview_batch_rename` & `apply_batch_rename` — Đổi tên Hàng loạt An toàn
-- **Request `preview_batch_rename`:**
-  ```typescript
-  interface PreviewRenameRequest {
-    file_paths: string[];
-    naming_pattern: "DATE_TIME_SEQ"; // YYYYMMDD_HHMM kèm _01, _02
-    fallback_to_mtime: boolean;
-  }
-  ```
-- **Response `preview_batch_rename`:**
-  ```typescript
-  interface RenameDiffItem {
-    original_path: string;
-    original_filename: string;
-    new_filename: string;
-    has_conflict: boolean;
-    conflict_resolution?: string;
-  }
-  ```
-- **Request `apply_batch_rename`:**
-  ```typescript
-  interface ApplyRenameRequest {
-    items: RenameDiffItem[];
-  }
-  ```
+Đây là contract triển khai hiện tại, thay contract DCT/overwrite trước đó. [Bằng chứng và giới hạn](../data_safety_fix_report.md).
 
-### 3.6. `move_or_copy_files` — Di chuyển / Sao chép Tệp An toàn
-- **Request Payload:**
-  ```typescript
-  interface MoveOrCopyRequest {
-    source_paths: string[];
-    destination_folder: string;
-    action_type: "MOVE" | "COPY";
-    conflict_strategy: "OVERWRITE" | "AUTO_RENAME" | "SKIP";
-  }
-  ```
+```typescript
+interface FileOperationRequest {
+  source_paths: string[];
+  action_type: 'MOVE' | 'COPY' | 'TRASH' | 'ROTATE';
+  destination_folder?: string;
+  degrees?: 90 | 180 | 270;
+}
+interface FileSnapshot { identity: string; size: number; modified_ns: number; sha256: string }
+interface OperationPreview {
+  token: string; action: string; degrees?: number;
+  entries: { source: string; target: string; expected: FileSnapshot }[];
+}
+interface OperationResult {
+  success_count: number; failed_count: number;
+  results: { path: string; target_path: string; status: 'completed' | 'failed';
+    error_message?: string; journal_path?: string }[];
+}
+```
+
+- `preview_file_operation` nhận request trên; token dùng một lần, TTL 15 phút. UI xác nhận danh sách trước apply. Backend kiểm identity/hash, source/target và batch, tuần tự hóa mutation. Không overwrite và không permanently unlink bản gốc.
+- `rotate_lossless({file_paths, degrees, confirmation_token})`: chỉ JPEG EXIF Orientation, không DCT/nén lại, trả `OperationResult` + `cache_bust_timestamp`. Giữ bản gốc và journal.
+- `move_or_copy_files({source_paths, destination_folder, action_type, confirmation_token})`: auto-name đã cố định ở preview, không có `OVERWRITE` strategy. Same-folder/hardlink alias bị chặn; khác volume copy SHA-256 rồi giữ original trong backup.
+- `move_to_trash({file_paths, confirmation_token})`: chỉ regular files, giữ nguyên original backup, bản sao kiểm chứng gửi native Trash; trả kết quả từng file. Không Trash thư mục.
+- `preview_batch_rename({file_paths, naming_pattern?, fallback_to_mtime?})`: mặc định mtime false; trả items có `new_path`, `preview_token`, `time_source`, `skip_reason`, `has_conflict` và tên cũ/mới. Không có ngày hợp lệ thì skip.
+- `apply_batch_rename({items})`: exact plan match; skip items không mutate, từ chối duplicate/collision/cross-folder/cycle trước ghi; trả `OperationResult`.
+- `list_file_recovery({folder_path})`: đọc JSONL journal trong `.vxphotos_operations`, trả các records chưa restored (action/status/source/target/backup/stage/journal_path).
+- `restore_file_operation({journal_path, confirmed:true})`: phục hồi đúng identity, không overwrite file mới. COPY output và MOVE khác volume output có thể được giữ để tránh mất dữ liệu. Lỗi truyền thật qua IPC; desktop không fallback mock.
+
 
 ---
 

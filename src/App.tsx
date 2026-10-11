@@ -1,4 +1,5 @@
 import { AppUpdates } from './components/AppUpdates';
+import { FileOperationDialog, FileDialog } from './components/file_operation_dialog';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   FileItem,
@@ -9,7 +10,7 @@ import {
   SortField,
   SortOrder,
 } from './types';
-import { tauriApi, ExifChunkStreamPayload } from './services/tauriApi';
+import { tauriApi, ExifChunkStreamPayload, OperationResult, RecoveryItem } from './services/tauriApi';
 import { WindowBar } from './components/WindowBar';
 import { Sidebar } from './components/Sidebar';
 import { TopToolbar } from './components/TopToolbar';
@@ -100,6 +101,19 @@ export const App: React.FC = () => {
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const [diffItems, setDiffItems] = useState<RenameDiffItem[]>([]);
 
+  const mutationBusy = useRef(false);
+  const [fileDialog, setFileDialog] = useState<FileDialog | null>(null);
+  const [allowMtime, setAllowMtime] = useState(false);
+  const scanId = useRef<string | null>(null);
+  const folderLoadId = useRef(0);
+  const earlyExif = useRef(new Map<string, ExifChunkStreamPayload['items']>());
+
+  const confirmFiles = (title: string, note: string, rows: FileDialog['rows']) => new Promise<boolean>(resolve => {
+    let settled = false;
+    const finish = (yes: boolean) => { if (settled) return; settled = true; setFileDialog(null); resolve(yes); };
+    setFileDialog({ title, note, rows, onConfirm: () => finish(true), onClose: () => finish(false) });
+  });
+
   // Context Menu & Toast
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
     isOpen: false,
@@ -114,52 +128,51 @@ export const App: React.FC = () => {
   };
 
   // 1. Load Folder Action
-  const loadFolder = useCallback(async (path: string) => {
+  const loadFolder = useCallback(async (path: string, keepMarked: string[] = []) => {
+    const request = ++folderLoadId.current;
     try {
-      setFolderPath(path);
-      setSelectedId(null);
-      setMarkedIds(new Set());
-      setLastMarkedAnchorId(null);
-
-      const [dirResult, subResult] = await Promise.all([
-        tauriApi.readDirectory(path),
-        tauriApi.getSubfolders(path),
-      ]);
-
-      setFiles(dirResult.files);
-      setSubfolders(subResult);
-      if (dirResult.files.length > 0) {
-        setSelectedId(dirResult.files[0].id);
-      }
-    } catch (err: any) {
-      showToast('error', `Lỗi tải thư mục: ${err}`);
+      const [dirResult, subResult] = await Promise.all([tauriApi.readDirectory(path), tauriApi.getSubfolders(path)]);
+      if (request !== folderLoadId.current) return;
+      scanId.current = dirResult.scan_id;
+      const early = new Map((earlyExif.current.get(dirResult.scan_id) || []).map(item => [item.file_id, item.exif]));
+      earlyExif.current.delete(dirResult.scan_id);
+      setFolderPath(path); setFiles(dirResult.files.map(file => early.has(file.id) ? { ...file, exif: early.get(file.id) || null, exif_loaded: true } : file)); setSubfolders(subResult);
+      setMarkedIds(new Set(keepMarked)); setLastMarkedAnchorId(null);
+      setSelectedId(dirResult.files[0]?.id || null);
+    } catch (err: unknown) {
+      if (request === folderLoadId.current) showToast('error', `Lỗi tải thư mục: ${err}`);
     }
   }, []);
 
   // Open Folder Dialog
   const handleOpenFolder = async () => {
-    const selected = await tauriApi.selectFolder(folderPath || undefined);
-    if (selected) {
-      loadFolder(selected);
-    }
+    try {
+      const selected = await tauriApi.selectFolder(folderPath || undefined);
+      if (selected) await loadFolder(selected);
+    } catch (error: unknown) { showToast('error', String(error)); }
   };
 
   // 2. Listen to streaming EXIF chunks from background worker
   useEffect(() => {
     let unlisten: (() => void) | undefined;
     tauriApi.listenExifStream((payload: ExifChunkStreamPayload) => {
+      if (payload.scan_id !== scanId.current) {
+        earlyExif.current.set(payload.scan_id, [...(earlyExif.current.get(payload.scan_id) || []), ...payload.items]);
+        if (earlyExif.current.size > 4) earlyExif.current.delete(earlyExif.current.keys().next().value!);
+        return;
+      }
       setFiles((prevFiles) => {
         const itemMap = new Map(payload.items.map((i) => [i.file_id, i.exif]));
         return prevFiles.map((f) => {
           if (itemMap.has(f.id)) {
-            return { ...f, exif: itemMap.get(f.id) || null };
+            return { ...f, exif: itemMap.get(f.id) || null, exif_loaded: true };
           }
           return f;
         });
       });
     }).then((fn) => {
       unlisten = fn;
-    });
+    }).catch(error => showToast('error', String(error)));
 
     return () => {
       if (unlisten) unlisten();
@@ -184,6 +197,7 @@ export const App: React.FC = () => {
         return Boolean(item.exif?.camera_make || item.exif?.camera_model);
       }
       if (filterMode === 'screenshot') {
+        if (!item.exif_loaded && !item.exif) return false;
         const hasCamera = Boolean(item.exif?.camera_make || item.exif?.camera_model);
         return !hasCamera;
       }
@@ -244,7 +258,7 @@ export const App: React.FC = () => {
         if (f.exif?.camera_make?.toLowerCase().includes('apple') || f.exif?.camera_make?.toLowerCase().includes('samsung')) {
           phone++;
         }
-      } else {
+      } else if (f.exif_loaded || f.exif) {
         screenshot++;
       }
     }
@@ -348,125 +362,104 @@ export const App: React.FC = () => {
     }
   };
 
-  // 6. Lossless Rotation Action
+  const showOperationResult = (title: string, res: OperationResult) => {
+    setFileDialog({ title, note: `${res.success_count} hoàn tất; ${res.failed_count} thất bại. File lỗi giữ trạng thái lựa chọn.`,
+      rows: res.results.map(r => ({ path: r.path, target: r.target_path !== r.path ? r.target_path : undefined,
+        detail: r.error_message || (r.status === 'completed' ? 'Hoàn tất' : r.status) })),
+      onClose: () => setFileDialog(null) });
+    showToast(res.failed_count ? 'error' : 'success', `${res.success_count} hoàn tất; ${res.failed_count} thất bại`);
+  };
+
+  const runFileOperation = async (action: 'ROTATE' | 'MOVE' | 'COPY' | 'TRASH', targets: string[], dest?: string, degrees?: number) => {
+    if (!targets.length) return;
+    if (mutationBusy.current || isRenameModalOpen || fileDialog) { showToast('info', 'Hãy hoàn tất hoặc đóng thao tác đang mở'); return; }
+    mutationBusy.current = true;
+    const refreshFolder = folderPath;
+    try {
+      const plan = await tauriApi.previewFileOperation(targets, action, dest, degrees);
+      const note = action === 'ROTATE'
+        ? `Xoay JPEG ${degrees}° qua EXIF; không nén lại. Bản gốc được giữ để phục hồi. Trình xem phải hỗ trợ EXIF Orientation.`
+        : action === 'TRASH' ? 'Ẩn các tệp dưới đây khỏi folder nguồn; bản sao vào Thùng rác, bản gốc giữ trong hồ sơ Phục hồi / Undo. Backup vẫn chiếm dung lượng.'
+        : 'Chỉ xử lý danh sách và tên đích dưới đây. Không ghi đè. Move khác volume giữ bản gốc trong hồ sơ phục hồi, nên chưa giải phóng dung lượng nguồn.';
+      if (!await confirmFiles(`${action} — ${plan.entries.length} tệp`, note, plan.entries.map(e => ({ path: e.source, target: e.target !== e.source ? e.target : undefined })))) return;
+      let res: OperationResult;
+      if (action === 'ROTATE') { const rotated = await tauriApi.rotateLossless(targets, degrees!, plan.token); setCacheBust(rotated.cache_bust_timestamp); res = rotated; }
+      else if (action === 'TRASH') res = await tauriApi.moveToTrash(targets, plan.token);
+      else res = await tauriApi.moveOrCopyFiles(targets, dest!, action, plan.token);
+      if (refreshFolder) await loadFolder(refreshFolder, res.results.filter(r => r.status !== 'completed').map(r => r.path));
+      showOperationResult(action, res);
+    } catch (error: unknown) {
+      setFileDialog({ title: `${action} — lỗi`, note: 'Không coi thao tác là hoàn tất. Nếu có hồ sơ phục hồi bên dưới, mở Phục hồi trong folder nguồn.',
+        rows: [{ path: String(error) }], onClose: () => setFileDialog(null) });
+      showToast('error', String(error));
+    } finally { mutationBusy.current = false; }
+  };
+
   const handleRotate = async (degrees: number = 90) => {
-    const targets = markedIds.size > 0
-      ? Array.from(markedIds)
-      : selectedId ? [selectedId] : [];
-
-    if (targets.length === 0) return;
-
-    try {
-      const res = await tauriApi.rotateLossless(targets, degrees);
-      setCacheBust(res.cache_bust_timestamp);
-      showToast('success', t('rotatedSuccess', language, { count: res.success_count }));
-    } catch (e: any) {
-      showToast('error', `Lỗi xoay ảnh: ${e}`);
-    }
+    const targets = markedIds.size ? Array.from(markedIds) : selectedId ? [selectedId] : [];
+    await runFileOperation('ROTATE', targets, undefined, degrees);
   };
 
-  // 7. Batch Renamer Action
+  const renameTargets = useRef<string[]>([]);
   const handleOpenBatchRename = async () => {
-    const targets = markedIds.size > 0
-      ? Array.from(markedIds)
-      : files.map((f) => f.id);
-
-    if (targets.length === 0) {
-      showToast('info', 'Không có ảnh nào để đổi tên');
-      return;
-    }
-
-    try {
-      const diffs = await tauriApi.previewBatchRename(targets);
-      setDiffItems(diffs);
-      setIsRenameModalOpen(true);
-    } catch (e: any) {
-      showToast('error', `Lỗi xem trước đổi tên: ${e}`);
-    }
+    if (mutationBusy.current || fileDialog || isRenameModalOpen) return;
+    const targets = markedIds.size ? Array.from(markedIds) : files.map(f => f.id);
+    if (!targets.length) { showToast('info', 'Không có ảnh nào để đổi tên'); return; }
+    mutationBusy.current = true;
+    try { renameTargets.current = targets; setAllowMtime(false); setDiffItems(await tauriApi.previewBatchRename(targets)); setIsRenameModalOpen(true); }
+    catch (error: unknown) { showToast('error', `Lỗi preview: ${error}`); }
+    finally { mutationBusy.current = false; }
   };
-
+  const handleMtimeChange = async (enabled: boolean) => {
+    if (mutationBusy.current) return;
+    mutationBusy.current = true; setIsRenaming(true);
+    try { setDiffItems(await tauriApi.previewBatchRename(renameTargets.current, undefined, enabled)); setAllowMtime(enabled); }
+    catch (error: unknown) { setDiffItems([]); showToast('error', String(error)); }
+    finally { mutationBusy.current = false; setIsRenaming(false); }
+  };
   const handleConfirmBatchRename = async () => {
-    setIsRenaming(true);
+    if (mutationBusy.current) return;
+    mutationBusy.current = true; setIsRenaming(true);
     try {
       const res = await tauriApi.applyBatchRename(diffItems);
       setIsRenameModalOpen(false);
-      showToast('success', `Đã đổi tên thành công ${res.success_count} ảnh`);
-      if (folderPath) {
-        loadFolder(folderPath);
-      }
-    } catch (e: any) {
-      showToast('error', `Lỗi đổi tên: ${e}`);
-    } finally {
-      setIsRenaming(false);
-    }
+      if (folderPath) await loadFolder(folderPath, res.results.filter(r => r.status !== 'completed').map(r => r.path));
+      showOperationResult('Đổi tên', res);
+    } catch (error: unknown) { setIsRenameModalOpen(false); setFileDialog({ title: 'Đổi tên — lỗi', note: 'Hãy preview lại. Không coi batch đã hoàn tất.', rows: [{ path: String(error) }], onClose: () => setFileDialog(null) }); }
+    finally { mutationBusy.current = false; setIsRenaming(false); }
   };
-
-  // 8. Move / Copy Files to Subfolder
-  const handleMoveFiles = async (
-    destFolder: string,
-    actionType: 'MOVE' | 'COPY' = 'MOVE',
-    explicitPaths?: string[]
-  ) => {
-    const targets =
-      explicitPaths && explicitPaths.length > 0
-        ? explicitPaths
-        : markedIds.size > 0
-        ? Array.from(markedIds)
-        : selectedId
-        ? [selectedId]
-        : [];
-
-    if (targets.length === 0) return;
-
-    try {
-      const res = await tauriApi.moveOrCopyFiles(targets, destFolder, actionType);
-      showToast('success', t('movedSuccess', language, { count: res.success_count }));
-      setMarkedIds((prev) => {
-        const next = new Set(prev);
-        targets.forEach((t) => next.delete(t));
-        return next;
-      });
-      if (folderPath) {
-        loadFolder(folderPath);
-      }
-    } catch (e: any) {
-      showToast('error', `Lỗi di chuyển: ${e}`);
-    }
+  const handleMoveFiles = async (destFolder: string, action: 'MOVE' | 'COPY' = 'MOVE', explicitPaths?: string[]) => {
+    const targets = explicitPaths?.length ? explicitPaths : markedIds.size ? Array.from(markedIds) : selectedId ? [selectedId] : [];
+    await runFileOperation(action, targets, destFolder);
   };
-
-  // 8b. Move to Trash
-  const handleDeleteToTrash = useCallback(async (explicitPaths?: string[]) => {
-    const targets =
-      explicitPaths && explicitPaths.length > 0
-        ? explicitPaths
-        : markedIds.size > 0
-        ? Array.from(markedIds)
-        : currentFocusedItem
-        ? [currentFocusedItem.path]
-        : [];
-
-    if (targets.length === 0) return;
-
+  const handleDeleteToTrash = async (explicitPaths?: string[]) => {
+    const targets = explicitPaths?.length ? explicitPaths : markedIds.size ? Array.from(markedIds) : currentFocusedItem ? [currentFocusedItem.path] : [];
+    await runFileOperation('TRASH', targets);
+  };
+  const handleRecovery = async () => {
+    if (!folderPath || mutationBusy.current || fileDialog || isRenameModalOpen) return;
+    mutationBusy.current = true;
     try {
-      await tauriApi.moveToTrash(targets);
-      showToast(
-        'success',
-        language === 'vi'
-          ? `Đã chuyển ${targets.length} tệp vào Thùng rác`
-          : `Moved ${targets.length} files to Trash`
-      );
-      setMarkedIds((prev) => {
-        const next = new Set(prev);
-        targets.forEach((p) => next.delete(p));
-        return next;
-      });
-      if (folderPath) {
-        loadFolder(folderPath);
-      }
-    } catch (err: any) {
-      showToast('error', `Lỗi chuyển Thùng rác: ${err}`);
-    }
-  }, [markedIds, currentFocusedItem, language, folderPath, loadFolder]);
+      const records = await tauriApi.listRecovery(folderPath);
+      if (!records.length) { showToast('info', 'Folder này không có hồ sơ phục hồi'); return; }
+      setFileDialog({ title: 'Phục hồi / Undo', note: 'Chọn thao tác cần phục hồi. Không ghi đè tệp mới; output/bản sao được giữ lại. Bản gốc và hồ sơ vẫn chiếm dung lượng.',
+        rows: records.map(r => ({ path: `${r.action}: ${r.entry.source}`, target: r.entry.target, detail: `${r.status} — Phục hồi / Restore`, onSelect: () => handleRestoreRecord(r) })),
+        onClose: () => setFileDialog(null) });
+    } catch (error: unknown) { showToast('error', String(error)); }
+    finally { mutationBusy.current = false; }
+  };
+  const handleRestoreRecord = async (record: RecoveryItem) => {
+    if (mutationBusy.current) return;
+    mutationBusy.current = true;
+    try {
+      const yes = await confirmFiles('Phục hồi thao tác', 'Khôi phục bản gốc/tên cũ. Không ghi đè file đã thay đổi hoặc tên bị chiếm. Bản sao/output có thể được giữ lại để tránh mất dữ liệu.', [{ path: record.entry.target, target: record.entry.source }]);
+      if (!yes) return;
+      await tauriApi.restoreOperation(record.journal_path);
+      if (folderPath) await loadFolder(folderPath);
+      showToast('success', 'Đã phục hồi; output/bản sao được giữ lại khi cần');
+    } catch (error: unknown) { setFileDialog({ title: 'Phục hồi bị chặn', note: 'Giữ nguyên dữ liệu; xem lỗi và hồ sơ bên dưới.', rows: [{ path: String(error), target: record.journal_path }], onClose: () => setFileDialog(null) }); }
+    finally { mutationBusy.current = false; }
+  };
 
   // 8c. Copy & Cut to Clipboard
   const handleCopyMarked = useCallback(async () => {
@@ -483,7 +476,7 @@ export const App: React.FC = () => {
       .filter((p): p is string => Boolean(p));
 
     if (paths.length === 0) return;
-    const ok = await tauriApi.clipboardFiles(paths, false);
+    const ok = await tauriApi.clipboardFiles(paths, false).catch(error => { showToast('error', String(error)); return false; });
     if (ok) {
       showToast('success', t('toastCopiedN', language, { count: paths.length }));
     }
@@ -503,7 +496,7 @@ export const App: React.FC = () => {
       .filter((p): p is string => Boolean(p));
 
     if (paths.length === 0) return;
-    const ok = await tauriApi.clipboardFiles(paths, true);
+    const ok = await tauriApi.clipboardFiles(paths, true).catch(error => { showToast('error', String(error)); return false; });
     if (ok) {
       const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
       const msgKey = isMac ? 'toastCutN' : 'toastCutN_Win';
@@ -591,6 +584,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
+      if (fileDialog || mutationBusy.current) return;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || isRenameModalOpen || isSettingsOpen || isPreviewOpen) {
         return;
       }
@@ -635,7 +629,7 @@ export const App: React.FC = () => {
           handleOpenBatchRename();
         } else {
           e.preventDefault();
-          handleRotate(90);
+          handleRotate(e.shiftKey ? 270 : 90);
         }
       } else if (e.key === 'F2') {
         e.preventDefault();
@@ -679,7 +673,7 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [visibleItems, currentFocusedIndex, currentFocusedItem, isRenameModalOpen, isSettingsOpen, isPreviewOpen, isInfoOpen, markedIds.size, selectedId, handleCopyMarked, handleCutMarked]);
+  }, [visibleItems, currentFocusedIndex, currentFocusedItem, isRenameModalOpen, isSettingsOpen, isPreviewOpen, isInfoOpen, markedIds.size, selectedId, handleCopyMarked, handleCutMarked, fileDialog]);
 
   // Keep one native menu subscription while handlers read current selection/state.
   const nativeMenuCallbacksRef = useRef<Parameters<typeof tauriApi.listenNativeMenuEvents>[0] | null>(null);
@@ -779,6 +773,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="h-screen w-screen bg-slate-50 dark:bg-[#0f1117] text-slate-900 dark:text-slate-100 flex flex-col overflow-hidden font-sans select-none">
+      <div className="contents" inert={Boolean(fileDialog)} aria-hidden={fileDialog ? true : undefined}>
       {/* 1. Custom Titlebar & Menu Bar */}
       <WindowBar
         onOpenFolder={handleOpenFolder}
@@ -813,6 +808,9 @@ export const App: React.FC = () => {
         counts={counts}
       />
 
+      {folderPath && <div className="shrink-0 flex justify-end px-3 py-1 border-b border-slate-200 dark:border-white/5 text-xs">
+        <button onClick={handleRecovery} className="rounded-md px-2 py-1 text-cyan-800 dark:text-cyan-300 hover:bg-cyan-50 dark:hover:bg-white/10">Phục hồi / Undo</button>
+      </div>}
       {/* 3. Main Stage Layout */}
       <div className="flex-1 flex overflow-hidden relative" onContextMenu={handleCanvasContextMenu}>
         {/* Left Subfolders Sidebar */}
@@ -865,6 +863,7 @@ export const App: React.FC = () => {
             subfolders={subfolders}
             language={language}
             onRotate={() => handleRotate(90)}
+            onRotateLeft={() => handleRotate(270)}
             onRename={handleOpenBatchRename}
             onCopy={handleCopyMarked}
             onCut={handleCutMarked}
@@ -914,9 +913,11 @@ export const App: React.FC = () => {
         isOpen={isRenameModalOpen}
         diffItems={diffItems}
         language={language}
-        onClose={() => setIsRenameModalOpen(false)}
+        onClose={() => { if (!mutationBusy.current) setIsRenameModalOpen(false); }}
         onConfirm={handleConfirmBatchRename}
         isProcessing={isRenaming}
+        allowMtime={allowMtime}
+        onMtimeChange={handleMtimeChange}
       />
 
       <SettingsModal
@@ -978,6 +979,8 @@ export const App: React.FC = () => {
         onOpenOtherFolder={handleOpenFolder}
       />
 
+      </div>
+      <FileOperationDialog dialog={fileDialog} />
       <Toast toast={toast} onClose={() => setToast(null)} />
       <AppUpdates language={language} notice />
     </div>

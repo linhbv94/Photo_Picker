@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::UNIX_EPOCH;
 use tauri::{AppHandle, Emitter};
 use uuid::Uuid;
@@ -40,7 +40,7 @@ pub struct ReadDirectoryResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExifChunkItem {
     pub file_id: String,
-    pub exif: ExifMetadata,
+    pub exif: Option<ExifMetadata>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,12 +51,26 @@ pub struct ExifChunkStreamPayload {
 }
 
 // Global active scan cancellation flag
-static CANCEL_SCAN: std::sync::atomic::AtomicBool = AtomicBool::new(false);
+static ACTIVE_SCAN: AtomicU64 = AtomicU64::new(0);
 
 fn is_supported_image(ext: &str) -> bool {
     matches!(
         ext.to_lowercase().as_str(),
-        "jpg" | "jpeg" | "png" | "webp" | "heic" | "dng" | "arw" | "cr2" | "cr3" | "nef" | "tif" | "tiff" | "bmp" | "gif" | "avif"
+        "jpg"
+            | "jpeg"
+            | "png"
+            | "webp"
+            | "heic"
+            | "dng"
+            | "arw"
+            | "cr2"
+            | "cr3"
+            | "nef"
+            | "tif"
+            | "tiff"
+            | "bmp"
+            | "gif"
+            | "avif"
     )
 }
 
@@ -67,9 +81,7 @@ pub async fn read_directory(
     recursive: Option<bool>,
 ) -> Result<ReadDirectoryResponse, String> {
     // Cancel any previous background scan
-    CANCEL_SCAN.store(true, Ordering::SeqCst);
-    std::thread::sleep(std::time::Duration::from_millis(15));
-    CANCEL_SCAN.store(false, Ordering::SeqCst);
+    let generation = ACTIVE_SCAN.fetch_add(1, Ordering::SeqCst) + 1;
 
     let path = Path::new(&folder_path);
     if !path.exists() || !path.is_dir() {
@@ -83,7 +95,10 @@ pub async fn read_directory(
     let mut file_paths_for_exif = Vec::new();
 
     if is_recursive {
-        for entry in walkdir::WalkDir::new(path).into_iter().filter_map(|e| e.ok()) {
+        for entry in walkdir::WalkDir::new(path)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
             if entry.file_type().is_file() {
                 let p = entry.path();
                 let file_name = p.file_name().and_then(|n| n.to_str()).unwrap_or("");
@@ -93,12 +108,18 @@ pub async fn read_directory(
                 let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("");
                 if is_supported_image(ext) {
                     if let Ok(metadata) = entry.metadata() {
-                        let mtime = metadata.modified().ok()
+                        let mtime = metadata
+                            .modified()
+                            .ok()
                             .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                            .map(|d| d.as_secs()).unwrap_or(0);
-                        let btime = metadata.created().ok()
+                            .map(|d| d.as_secs())
+                            .unwrap_or(0);
+                        let btime = metadata
+                            .created()
+                            .ok()
                             .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                            .map(|d| d.as_secs()).unwrap_or(mtime);
+                            .map(|d| d.as_secs())
+                            .unwrap_or(mtime);
 
                         let p_str = p.to_string_lossy().to_string();
                         files.push(FileItem {
@@ -117,10 +138,12 @@ pub async fn read_directory(
             }
         }
     } else {
-        if let Ok(entries) = fs::read_dir(path) {
-            for entry in entries.filter_map(|e| e.ok()) {
+        {
+            let entries = fs::read_dir(path).map_err(|e| e.to_string())?;
+            for entry in entries {
+                let entry = entry.map_err(|e| e.to_string())?;
                 let p = entry.path();
-                if p.is_file() {
+                if entry.file_type().map(|t| t.is_file()).unwrap_or(false) {
                     let file_name = p.file_name().and_then(|n| n.to_str()).unwrap_or("");
                     if file_name.starts_with('.') {
                         continue;
@@ -128,12 +151,18 @@ pub async fn read_directory(
                     let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("");
                     if is_supported_image(ext) {
                         if let Ok(metadata) = entry.metadata() {
-                            let mtime = metadata.modified().ok()
+                            let mtime = metadata
+                                .modified()
+                                .ok()
                                 .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                                .map(|d| d.as_secs()).unwrap_or(0);
-                            let btime = metadata.created().ok()
+                                .map(|d| d.as_secs())
+                                .unwrap_or(0);
+                            let btime = metadata
+                                .created()
+                                .ok()
                                 .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                                .map(|d| d.as_secs()).unwrap_or(mtime);
+                                .map(|d| d.as_secs())
+                                .unwrap_or(mtime);
 
                             let p_str = p.to_string_lossy().to_string();
                             files.push(FileItem {
@@ -168,16 +197,15 @@ pub async fn read_directory(
         let total = file_paths_for_exif.len();
 
         for (idx, file_path) in file_paths_for_exif.into_iter().enumerate() {
-            if CANCEL_SCAN.load(Ordering::SeqCst) {
+            if ACTIVE_SCAN.load(Ordering::SeqCst) != generation {
                 break;
             }
 
-            if let Some(exif_data) = read_exif_fast(&file_path) {
-                current_chunk.push(ExifChunkItem {
-                    file_id: file_path,
-                    exif: exif_data,
-                });
-            }
+            let exif = read_exif_fast(&file_path);
+            current_chunk.push(ExifChunkItem {
+                file_id: file_path,
+                exif,
+            });
 
             let is_last = idx + 1 == total;
             if current_chunk.len() >= chunk_size || is_last {
@@ -220,7 +248,10 @@ pub fn get_subfolders(folder_path: String) -> Result<Vec<SubfolderItem>, String>
 
                 let mut children_count = 0;
                 if let Ok(child_entries) = fs::read_dir(&p) {
-                    children_count = child_entries.filter_map(|e| e.ok()).filter(|e| e.path().is_dir()).count();
+                    children_count = child_entries
+                        .filter_map(|e| e.ok())
+                        .filter(|e| e.path().is_dir())
+                        .count();
                 }
 
                 subfolders.push(SubfolderItem {
@@ -241,16 +272,23 @@ pub fn get_subfolders(folder_path: String) -> Result<Vec<SubfolderItem>, String>
 #[tauri::command]
 pub fn create_subfolder(parent_path: String, folder_name: String) -> Result<SubfolderItem, String> {
     let clean_name = folder_name.trim();
-    if clean_name.is_empty() || clean_name.contains('/') || clean_name.contains('\\') {
+    if clean_name.is_empty()
+        || clean_name == "."
+        || clean_name == ".."
+        || clean_name.starts_with(".vxphotos_")
+        || clean_name.contains('/')
+        || clean_name.contains('\\')
+        || clean_name.contains(':')
+    {
         return Err("Invalid folder name".to_string());
     }
 
-    let new_dir = Path::new(&parent_path).join(clean_name);
+    let new_dir = super::file_safety::resolved(&Path::new(&parent_path).join(clean_name))?;
     if new_dir.exists() {
         return Err("Folder already exists".to_string());
     }
 
-    fs::create_dir_all(&new_dir).map_err(|e| e.to_string())?;
+    fs::create_dir(&new_dir).map_err(|e| e.to_string())?;
 
     Ok(SubfolderItem {
         id: new_dir.to_string_lossy().to_string(),
@@ -272,13 +310,17 @@ fn nat_sort(a: &str, b: &str) -> std::cmp::Ordering {
         if a_chars[i].is_ascii_digit() && b_chars[j].is_ascii_digit() {
             let mut num_a: u64 = 0;
             while i < a_chars.len() && a_chars[i].is_ascii_digit() {
-                num_a = num_a.saturating_mul(10).saturating_add(a_chars[i].to_digit(10).unwrap() as u64);
+                num_a = num_a
+                    .saturating_mul(10)
+                    .saturating_add(a_chars[i].to_digit(10).unwrap() as u64);
                 i += 1;
             }
 
             let mut num_b: u64 = 0;
             while j < b_chars.len() && b_chars[j].is_ascii_digit() {
-                num_b = num_b.saturating_mul(10).saturating_add(b_chars[j].to_digit(10).unwrap() as u64);
+                num_b = num_b
+                    .saturating_mul(10)
+                    .saturating_add(b_chars[j].to_digit(10).unwrap() as u64);
                 j += 1;
             }
 

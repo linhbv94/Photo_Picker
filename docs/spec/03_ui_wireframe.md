@@ -2,7 +2,7 @@
 
 > **Module:** Đặc tả Giao diện & Trải nghiệm Người dùng (UI/UX Wireframe Specs)  
 > **Tài liệu cha:** [00_system_overview.md](00_system_overview.md)  
-> **Ngôn ngữ thiết kế:** Tuân thủ chuẩn [master_theme.md](../../../master_theme.md) (VX Theme: Slate `#0f1117`, Electric Cyan `#06b6d4`, Amber `#fbbf24`)  
+> **Ngôn ngữ thiết kế:** Tuân thủ chuẩn [master_theme.md](../../../_summary/master_theme.md) (VX Theme: Slate `#0f1117`, Electric Cyan `#06b6d4`, Amber `#fbbf24`)
 > **Kiến trúc áp dụng:** Option C (Tauri React Shell + Native Platform Quick Preview)  
 > **Trạng thái:** Hoàn chỉnh (V1.1)  
 
@@ -228,7 +228,7 @@ Trên Windows, hệ điều hành không có global top menu bar. Để giữ tr
    - Khi người dùng nhấn phím `Alt`: các ký tự gạch chân xuất hiện (`Alt+F` cho File, `Alt+E` cho Edit, `Alt+V` cho View, `Alt+T` cho Tools).
    - Cho phép điều hướng dropdown menu hoàn toàn bằng phím mũi tên và Enter.
 3. **Phong cách Thẩm mỹ Menu Dropdown:**
-   - Thiết kế theo chuẩn Glass Dropdown của [master_theme.md](../../../master_theme.md):
+   - Thiết kế theo chuẩn Glass Dropdown của [master_theme.md](../../../_summary/master_theme.md):
      - Background: `rgba(15, 20, 28, 0.96)` kết hợp viền mờ `border-white/10`.
      - Phông chữ compact: `text-xs` (12px), giãn dòng gọn gàng, bo góc nhẹ `rounded-md`, đổ bóng chiều sâu `shadow-2xl`.
      - Hover item: nền xanh cyan bán trong suốt `hover:bg-cyan-500/15 text-cyan-300`.

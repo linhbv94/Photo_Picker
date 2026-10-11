@@ -1,12 +1,10 @@
-use chrono::{DateTime, Local};
+use super::{exif_reader::read_exif_fast, file_safety::*};
+use chrono::{DateTime, Local, NaiveDateTime};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fs;
-use std::path::Path;
-use std::time::UNIX_EPOCH;
-use uuid::Uuid;
-
-use super::exif_reader::read_exif_fast;
+use std::{
+    collections::{BTreeMap, HashSet},
+    path::Path,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RenameDiffItem {
@@ -16,13 +14,12 @@ pub struct RenameDiffItem {
     pub new_path: String,
     pub has_conflict: bool,
     pub conflict_resolution: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ApplyRenameResponse {
-    pub success_count: usize,
-    pub failed_count: usize,
-    pub results: Vec<RenameDiffItem>,
+    #[serde(default)]
+    pub preview_token: String,
+    #[serde(default)]
+    pub time_source: String,
+    #[serde(default)]
+    pub skip_reason: Option<String>,
 }
 
 #[tauri::command]
@@ -31,151 +28,139 @@ pub fn preview_batch_rename(
     _naming_pattern: Option<String>,
     fallback_to_mtime: Option<bool>,
 ) -> Result<Vec<RenameDiffItem>, String> {
-    let use_mtime_fallback = fallback_to_mtime.unwrap_or(true);
-
-    // Group files by base timestamp YYYYMMDD_HHMM
-    let mut date_groups: HashMap<String, Vec<(String, String, Option<String>)>> = HashMap::new();
-
-    for path_str in &file_paths {
-        let p = Path::new(path_str);
-        if !p.exists() {
-            continue;
+    let _guard = MUTATIONS.lock().map_err(|e| e.to_string())?;
+    let mut groups: BTreeMap<String, Vec<(String, String, String, String, Snapshot)>> =
+        BTreeMap::new();
+    let mut skipped = Vec::new();
+    let mut identities = HashSet::new();
+    for input in file_paths {
+        let source = resolved(Path::new(&input))?;
+        let stamp = snapshot(&source)?;
+        if !identities.insert(stamp.identity.clone()) {
+            return Err("Nguồn trùng/hardlink trong batch".into());
         }
-
-        let orig_filename = p.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
-
-        let mut time_str = String::new();
-        let mut sub_sec = None;
-
-        // Try EXIF DateTaken
-        if let Some(exif) = read_exif_fast(p) {
-            if let Some(dt) = exif.date_taken {
-                // Expects YYYY-MM-DD HH:MM:SS
-                let clean = dt.replace(['-', ':', ' '], "");
-                if clean.len() >= 12 {
-                    time_str = format!("{}_{}", &clean[0..8], &clean[8..12]);
-                    sub_sec = exif.sub_sec_time;
-                }
-            }
-        }
-
-        // Fallback to mtime if needed
-        if time_str.is_empty() && use_mtime_fallback {
-            if let Ok(metadata) = p.metadata() {
-                if let Ok(mtime) = metadata.modified() {
-                    let datetime: DateTime<Local> = mtime.into();
-                    time_str = datetime.format("%Y%m%d_%H%M").to_string();
-                }
-            }
-        }
-
-        // Ultimate fallback
-        if time_str.is_empty() {
-            let now = std::time::SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map(|d| d.as_secs())
-                .unwrap_or(0);
-            time_str = format!("image_{}", now);
-        }
-
-        date_groups
-            .entry(time_str)
-            .or_default()
-            .push((path_str.clone(), orig_filename, sub_sec));
-    }
-
-    let mut diff_items = Vec::new();
-
-    for (time_key, mut files) in date_groups {
-        // Sort files within the same minute: first by sub-sec, then original filename
-        files.sort_by(|a, b| {
-            if a.2.is_some() && b.2.is_some() {
-                a.2.cmp(&b.2)
-            } else {
-                a.1.cmp(&b.1)
-            }
-        });
-
-        let count = files.len();
-        for (idx, (orig_path, orig_filename, _)) in files.into_iter().enumerate() {
-            let p = Path::new(&orig_path);
-            let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
-            let parent_dir = p.parent().unwrap_or_else(|| Path::new(""));
-
-            let new_filename = if count > 1 {
-                format!("{}_{:02}.{}", time_key, idx + 1, ext)
-            } else {
-                format!("{}.{}", time_key, ext)
-            };
-
-            let new_path = parent_dir.join(&new_filename).to_string_lossy().to_string();
-            let has_conflict = Path::new(&new_path).exists() && new_path != orig_path;
-
-            diff_items.push(RenameDiffItem {
-                original_path: orig_path,
-                original_filename: orig_filename,
-                new_filename,
-                new_path,
-                has_conflict,
+        let filename = source
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or("Tên không UTF-8")?
+            .to_string();
+        let path = source.to_str().ok_or("Path không UTF-8")?.to_string();
+        let exif = read_exif_fast(&source);
+        let date = exif
+            .as_ref()
+            .and_then(|e| e.date_taken.as_ref())
+            .and_then(|s| NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S").ok());
+        let (time, provenance) = if let Some(date) = date {
+            (Some(date.format("%Y%m%d_%H%M").to_string()), "exif")
+        } else if fallback_to_mtime.unwrap_or(false) {
+            let m = std::fs::metadata(&source)
+                .map_err(|e| e.to_string())?
+                .modified()
+                .map_err(|e| e.to_string())?;
+            let d: DateTime<Local> = m.into();
+            (Some(d.format("%Y%m%d_%H%M").to_string()), "mtime")
+        } else {
+            (None, "unknown")
+        };
+        if let Some(time) = time {
+            // Use a single total ordering, never switch comparators per pair.
+            let sub = exif.and_then(|e| e.sub_sec_time).unwrap_or_default();
+            unchanged(&source, &stamp)?;
+            groups
+                .entry(format!("{}|{}", source.parent().unwrap().display(), time))
+                .or_default()
+                .push((path, filename, sub, provenance.into(), stamp));
+        } else {
+            skipped.push(RenameDiffItem {
+                original_path: path.clone(),
+                original_filename: filename.clone(),
+                new_filename: filename,
+                new_path: path,
+                has_conflict: false,
                 conflict_resolution: None,
+                preview_token: String::new(),
+                time_source: provenance.into(),
+                skip_reason: Some("Không có ngày chụp hợp lệ; giữ nguyên tên".into()),
             });
         }
     }
-
-    Ok(diff_items)
+    let mut items = Vec::new();
+    let mut entries = Vec::new();
+    for (key, mut files) in groups {
+        let time = key.rsplit('|').next().unwrap();
+        files.sort_by(|a, b| a.2.cmp(&b.2).then(a.1.cmp(&b.1)));
+        let count = files.len();
+        for (i, (path, filename, _, provenance, expected)) in files.into_iter().enumerate() {
+            let p = Path::new(&path);
+            let ext = p.extension().and_then(|n| n.to_str()).unwrap_or("");
+            let new_filename = if count > 1 {
+                format!("{}_{:02}.{}", time, i + 1, ext)
+            } else {
+                format!("{}.{}", time, ext)
+            };
+            let target = p.parent().unwrap().join(&new_filename);
+            let new_path = target.to_str().ok_or("Path không UTF-8")?.to_string();
+            let conflict = exists(&target)? && target != p;
+            let skip = if target == p {
+                Some("Tên đã đúng; không thay đổi".into())
+            } else {
+                None
+            };
+            if skip.is_none() {
+                entries.push(Entry {
+                    source: path.clone(),
+                    target: new_path.clone(),
+                    expected,
+                });
+            }
+            items.push(RenameDiffItem {
+                original_path: path,
+                original_filename: filename,
+                new_filename,
+                new_path,
+                has_conflict: conflict,
+                conflict_resolution: None,
+                preview_token: String::new(),
+                time_source: provenance,
+                skip_reason: skip,
+            });
+        }
+    }
+    let plan = save_plan("RENAME", None, entries)?;
+    for item in &mut items {
+        if item.skip_reason.is_none() {
+            item.preview_token = plan.token.clone();
+        }
+    }
+    items.extend(skipped);
+    Ok(items)
 }
 
 #[tauri::command]
-pub fn apply_batch_rename(items: Vec<RenameDiffItem>) -> Result<ApplyRenameResponse, String> {
-    let mut success_count = 0;
-    let mut failed_count = 0;
-    let mut results = Vec::new();
-
-    // Two-Phase Rename to prevent collision
-    // Phase 1: Rename original to temporary UUID file
-    let mut temp_renames: Vec<(String, String, String)> = Vec::new(); // (temp_path, original_path, target_path)
-
-    for item in &items {
-        let orig = Path::new(&item.original_path);
-        if !orig.exists() {
-            failed_count += 1;
-            continue;
-        }
-
-        let parent = orig.parent().unwrap_or_else(|| Path::new(""));
-        let temp_filename = format!(".tmp_rename_{}", Uuid::new_v4());
-        let temp_path = parent.join(temp_filename).to_string_lossy().to_string();
-
-        if let Ok(_) = fs::rename(orig, &temp_path) {
-            temp_renames.push((temp_path, item.original_path.clone(), item.new_path.clone()));
-        } else {
-            failed_count += 1;
-        }
+pub fn apply_batch_rename(items: Vec<RenameDiffItem>) -> Result<OperationResult, String> {
+    let _guard = MUTATIONS.lock().map_err(|e| e.to_string())?;
+    let active: Vec<_> = items.iter().filter(|i| i.skip_reason.is_none()).collect();
+    let token = &active
+        .first()
+        .ok_or("Không có tệp đủ điều kiện đổi tên")?
+        .preview_token;
+    if active.iter().any(|i| &i.preview_token != token) {
+        return Err("Batch dùng nhiều preview khác nhau".into());
     }
-
-    // Phase 2: Rename from temporary file to target path
-    for (temp_path, orig_path, target_path) in temp_renames {
-        let target = Path::new(&target_path);
-        if let Ok(_) = fs::rename(&temp_path, target) {
-            success_count += 1;
-            results.push(RenameDiffItem {
-                original_path: orig_path,
-                original_filename: "".to_string(),
-                new_filename: target.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string(),
-                new_path: target_path,
-                has_conflict: false,
-                conflict_resolution: None,
-            });
-        } else {
-            // Rollback if phase 2 failed
-            let _ = fs::rename(&temp_path, &orig_path);
-            failed_count += 1;
-        }
+    let plan = take_plan(token, "RENAME")?;
+    if plan.entries.len() != active.len()
+        || plan.entries.iter().zip(&active).any(|(e, i)| {
+            e.source != i.original_path
+                || e.target != i.new_path
+                || Path::new(&e.source).parent() != Path::new(&e.target).parent()
+        })
+    {
+        return Err("Batch đã đổi sau preview; không thực thi".into());
     }
-
-    Ok(ApplyRenameResponse {
-        success_count,
-        failed_count,
-        results,
-    })
+    validate_entries(&plan.entries)?;
+    let mut result = OperationResult::default();
+    for e in plan.entries {
+        result.push(&e, execute_rename(&e, "RENAME"));
+    }
+    Ok(result)
 }

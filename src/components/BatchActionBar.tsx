@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { RotateCw, Edit3, Copy, Scissors, FolderInput, X, Zap, ChevronUp, Trash2 } from 'lucide-react';
+import { RotateCw, RotateCcw, Edit3, Copy, Scissors, FolderInput, X, Zap, ChevronUp, Trash2 } from 'lucide-react';
 import { SubfolderItem } from '../types';
 import { t, Language } from '../i18n/translations';
 
@@ -8,6 +8,7 @@ interface BatchActionBarProps {
   subfolders: SubfolderItem[];
   language?: Language;
   onRotate: () => void;
+  onRotateLeft: () => void;
   onRename: () => void;
   onCopy: () => void;
   onCut: () => void;
@@ -27,7 +28,7 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
   markedCount,
   subfolders,
   language = 'vi',
-  onRotate,
+  onRotate, onRotateLeft,
   onRename,
   onCopy,
   onCut,
@@ -73,6 +74,10 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
         <ActionTooltip text={`${t('rotate90', language)} (R)`} />
       </button>
 
+      <button onClick={onRotateLeft} className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/20 transition-all active:scale-95 shrink-0 group relative" aria-label="Xoay trái 90°">
+        <RotateCcw className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+        <ActionTooltip text="Xoay JPEG trái 90° (Shift+R)" />
+      </button>
       {/* Action 2: Batch Rename (Icon Only) */}
       <button
         onClick={onRename}

@@ -13,21 +13,27 @@ export interface ExifChunkStreamPayload {
   is_last_chunk: boolean;
   items: Array<{
     file_id: string;
-    exif: ExifMetadata;
+    exif: ExifMetadata | null;
   }>;
 }
 
-export interface RotateResponse {
-  success_count: number;
-  failed_paths: Array<{ path: string; error_message: string }>;
-  cache_bust_timestamp: number;
+export interface FileOperationResult {
+  path: string; target_path: string; status: string;
+  error_message?: string | null; journal_path?: string | null;
 }
-
-export interface ApplyRenameResponse {
-  success_count: number;
-  failed_count: number;
-  results: RenameDiffItem[];
+export interface OperationResult {
+  success_count: number; failed_count: number; results: FileOperationResult[];
 }
+export interface OperationPreview {
+  token: string; action: string; degrees?: number;
+  entries: Array<{ source: string; target: string; expected: { size: number } }>;
+}
+export interface RecoveryItem {
+  id: string; action: string; status: string; journal_path: string; backup: string;
+  entry: { source: string; target: string };
+}
+export interface RotateResponse extends OperationResult { cache_bust_timestamp: number; }
+export type ApplyRenameResponse = OperationResult;
 
 export type UnlistenFn = () => void;
 
@@ -205,6 +211,21 @@ const MOCK_SUBFOLDERS: SubfolderItem[] = [
 ];
 
 export const tauriApi = {
+  async previewFileOperation(sourcePaths: string[], actionType: 'MOVE' | 'COPY' | 'TRASH' | 'ROTATE', destinationFolder?: string, degrees?: number): Promise<OperationPreview> {
+    if (!isTauriEnvironment()) throw new Error('Thao tác ghi chỉ có trong app desktop');
+    const { invoke } = await import('@tauri-apps/api/core');
+    return invoke<OperationPreview>('preview_file_operation', { sourcePaths, actionType, destinationFolder, degrees });
+  },
+  async listRecovery(folderPath: string): Promise<RecoveryItem[]> {
+    if (!isTauriEnvironment()) return [];
+    const { invoke } = await import('@tauri-apps/api/core');
+    return invoke<RecoveryItem[]>('list_file_recovery', { folderPath });
+  },
+  async restoreOperation(journalPath: string): Promise<void> {
+    if (!isTauriEnvironment()) throw new Error('Phục hồi chỉ có trong app desktop');
+    const { invoke } = await import('@tauri-apps/api/core');
+    return invoke('restore_file_operation', { journalPath, confirmed: true });
+  },
   async selectFolder(defaultPath?: string): Promise<string | null> {
     if (isTauriEnvironment()) {
       try {
@@ -212,6 +233,7 @@ export const tauriApi = {
         return await invoke<string | null>('select_folder_dialog', { defaultPath });
       } catch (e) {
         console.warn('Tauri selectFolder failed:', e);
+        throw e;
       }
     }
     return '/Volumes/Photos/2026_Project';
@@ -227,6 +249,7 @@ export const tauriApi = {
         });
       } catch (e) {
         console.warn('Tauri readDirectory failed, using fallback:', e);
+        throw e;
       }
     }
     return {
@@ -244,6 +267,7 @@ export const tauriApi = {
         return await invoke<SubfolderItem[]>('get_subfolders', { folderPath });
       } catch (e) {
         console.warn('Tauri getSubfolders failed:', e);
+        throw e;
       }
     }
     return MOCK_SUBFOLDERS;
@@ -259,6 +283,7 @@ export const tauriApi = {
         });
       } catch (e) {
         console.warn('Tauri createSubfolder failed:', e);
+        throw e;
       }
     }
     const newFolder: SubfolderItem = {
@@ -271,21 +296,22 @@ export const tauriApi = {
     return newFolder;
   },
 
-  async rotateLossless(filePaths: string[], degrees: number): Promise<RotateResponse> {
+  async rotateLossless(filePaths: string[], degrees: number, confirmationToken: string): Promise<RotateResponse> {
     if (isTauriEnvironment()) {
       try {
         const { invoke } = await import('@tauri-apps/api/core');
         return await invoke<RotateResponse>('rotate_lossless', {
           filePaths,
-          degrees,
+          degrees, confirmationToken,
         });
       } catch (e) {
         console.warn('Tauri rotateLossless failed:', e);
+        throw e;
       }
     }
     return {
       success_count: filePaths.length,
-      failed_paths: [],
+      failed_count: 0, results: filePaths.map(path => ({ path, target_path: path, status: 'demo' })),
       cache_bust_timestamp: Date.now(),
     };
   },
@@ -297,6 +323,7 @@ export const tauriApi = {
         return await invoke<boolean>('clipboard_files', { filePaths, isCut });
       } catch (e) {
         console.warn('Tauri clipboardFiles failed:', e);
+        throw e;
       }
     }
     return false;
@@ -305,7 +332,7 @@ export const tauriApi = {
   async previewBatchRename(
     filePaths: string[],
     namingPattern?: string,
-    fallbackToMtime: boolean = true
+    fallbackToMtime: boolean = false
   ): Promise<RenameDiffItem[]> {
     if (isTauriEnvironment()) {
       try {
@@ -317,6 +344,7 @@ export const tauriApi = {
         });
       } catch (e) {
         console.warn('Tauri previewBatchRename failed:', e);
+        throw e;
       }
     }
     return filePaths.map((origPath, index) => {
@@ -341,34 +369,35 @@ export const tauriApi = {
         return await invoke<ApplyRenameResponse>('apply_batch_rename', { items });
       } catch (e) {
         console.warn('Tauri applyBatchRename failed:', e);
+        throw e;
       }
     }
     return {
       success_count: items.length,
       failed_count: 0,
-      results: items,
+      results: items.map(i => ({ path: i.original_path, target_path: i.new_path, status: 'demo' })),
     };
   },
 
   async moveOrCopyFiles(
     sourcePaths: string[],
     destinationFolder: string,
-    actionType: 'MOVE' | 'COPY'
-  ): Promise<{ success_count: number; failed_paths: string[] }> {
+    actionType: 'MOVE' | 'COPY', confirmationToken: string
+  ): Promise<OperationResult> {
     if (isTauriEnvironment()) {
       try {
         const { invoke } = await import('@tauri-apps/api/core');
-        return await invoke<{ success_count: number; failed_paths: string[] }>('move_or_copy_files', {
+        return await invoke<OperationResult>('move_or_copy_files', {
           sourcePaths,
           destinationFolder,
-          actionType,
+          actionType, confirmationToken,
         });
       } catch (e) {
         console.warn('Tauri moveOrCopyFiles failed:', e);
         throw e;
       }
     }
-    return { success_count: sourcePaths.length, failed_paths: [] };
+    return { success_count: sourcePaths.length, failed_count: 0, results: sourcePaths.map(path => ({ path, target_path: path, status: 'demo' })) };
   },
 
   async revealInFileManager(filePath: string): Promise<void> {
@@ -378,6 +407,7 @@ export const tauriApi = {
         await invoke('reveal_in_file_manager', { filePath });
       } catch (e) {
         console.warn('Tauri revealInFileManager failed:', e);
+        throw e;
       }
     } else {
       console.log('Reveal in File Manager (Browser mock):', filePath);
@@ -391,6 +421,7 @@ export const tauriApi = {
         await invoke('open_in_system_viewer', { filePath });
       } catch (e) {
         console.warn('Tauri openInSystemViewer failed:', e);
+        throw e;
       }
     } else {
       console.log('Open in System Viewer (Browser mock):', filePath);
@@ -404,22 +435,24 @@ export const tauriApi = {
         await invoke('open_native_preview', { filePath });
       } catch (e) {
         console.warn('Tauri openNativePreview failed:', e);
+        throw e;
       }
     } else {
       console.log('Open Native Preview (Browser mock):', filePath);
     }
   },
 
-  async moveToTrash(filePaths: string[]): Promise<number> {
+  async moveToTrash(filePaths: string[], confirmationToken: string): Promise<OperationResult> {
     if (isTauriEnvironment()) {
       try {
         const { invoke } = await import('@tauri-apps/api/core');
-        return await invoke<number>('move_to_trash', { filePaths });
+        return await invoke<OperationResult>('move_to_trash', { filePaths, confirmationToken });
       } catch (e) {
         console.warn('Tauri moveToTrash failed:', e);
+        throw e;
       }
     }
-    return filePaths.length;
+    return { success_count: filePaths.length, failed_count: 0, results: filePaths.map(path => ({ path, target_path: path, status: 'demo' })) };
   },
 
   async listenExifStream(callback: (payload: ExifChunkStreamPayload) => void): Promise<UnlistenFn> {
@@ -431,6 +464,7 @@ export const tauriApi = {
         });
       } catch (e) {
         console.warn('Tauri listenExifStream failed:', e);
+        throw e;
       }
     }
     return () => {};
@@ -475,6 +509,7 @@ export const tauriApi = {
         };
       } catch (e) {
         console.warn('Tauri listenNativeMenuEvents failed:', e);
+        throw e;
       }
     }
     return () => {};
@@ -487,6 +522,7 @@ export const tauriApi = {
         return bustToken ? `${url}?t=${bustToken}` : url;
       } catch (e) {
         console.warn('convertFileSrc failed:', e);
+        throw e;
       }
     }
     return `https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&auto=format&fit=crop&q=80`;
@@ -499,6 +535,7 @@ export const tauriApi = {
         await getCurrentWindow().startDragging();
       } catch (e) {
         console.warn('startDragging failed:', e);
+        throw e;
       }
     }
   },

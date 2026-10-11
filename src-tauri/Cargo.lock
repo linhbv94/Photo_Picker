@@ -2775,16 +2775,18 @@ dependencies = [
 
 [[package]]
 name = "photo_picker"
-version = "1.0.10"
+version = "1.0.11"
 dependencies = [
  "chrono",
  "cocoa",
  "kamadak-exif",
+ "libc",
  "objc",
  "regex",
  "rfd",
  "serde",
  "serde_json",
+ "sha2",
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
