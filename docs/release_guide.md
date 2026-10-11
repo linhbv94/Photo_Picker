@@ -66,6 +66,8 @@ Windows mở bộ cài. Mac chọn đúng DMG, kéo app vào Applications và m�
 ## Chẩn đoán và mức kiểm chứng
 
 - Windows ESM preload: dùng `pathToFileURL(...).href`, test trên Windows với đường dẫn có khoảng trắng, `#`, `%`.
+- Script test đọc source bằng regex phải chuẩn hóa CRLF/LF trước khi loại static imports; kiểm tra cả hai kiểu xuống dòng. Checkout Windows có thể dùng CRLF dù file nguồn trên Mac dùng LF.
+- Chạy `test:safety` trước `test:updates` để compile native binary trước regression xoay Windows; standalone test có timeout hữu hạn 10 phút. Không bỏ test để né cold-build timeout. Nếu cần sửa workflow/source sau tag, tạo version mới và giữ tag cũ bất biến.
 - Draft 404: tìm release qua danh sách có auth, dùng release ID; tag endpoint phục vụ published release. `validate_draft_release.yml` sửa manifest legacy của draft mà không build lại; chưa tự xác minh chữ ký hoặc publish.
 - App vẫn không thấy update: kiểm tra đúng repo/app, stable đã publish, endpoint công khai, version và public key. Draft luôn chưa dùng được qua endpoint public; không chờ vô hạn để chữa 404 của draft.
 - Action Node deprecation: dùng phiên bản action đã hỗ trợ runtime mới, kiểm tra runner tương thích; warning không tự giải thích lỗi build.

@@ -1,6 +1,6 @@
 # VXPhotos — Bản sửa an toàn dữ liệu
 
-Ngày cập nhật: 2026-10-11. Nền source: 1.0.10 / `2bda37f`; bản sửa đang chuẩn bị phát hành 1.0.12 sau draft 1.0.11 lỗi timeout harness Windows. [Audit trước sửa](data_safety_audit.md) là bằng chứng lịch sử, không mô tả engine hiện tại. Trạng thái CI/publish cuối được ghi trong [báo cáo phát hành](release_1_0_12.md).
+Ngày cập nhật: 2026-10-11. Nền source: 1.0.10 / `2bda37f`; bản sửa đã phát hành [1.0.12](https://github.com/linhbv94/Photo_Picker/releases/tag/v1.0.12), commit `ceb8be3691687d755275d6f389affd2c5234ecf9`; draft1.0.11 lỗi timeout harness Windows không publish. [Audit trước sửa](data_safety_audit.md) là bằng chứng lịch sử, không mô tả engine hiện tại. Trạng thái CI/publish cuối được ghi trong [báo cáo phát hành](release_1_0_12.md).
 
 ## Thay đổi đã triển khai
 
@@ -39,4 +39,4 @@ macOS publish dùng `renameatx_np(RENAME_EXCL)` và pin hai parent directory. Wi
 - Copy bảo toàn nội dung, mtime và permissions cơ bản; chưa cam kết bảo toàn birthtime, ACL, xattrs, NTFS alternate streams hoặc resource forks. Rotate giữ metadata nhúng và bản gốc, output mới chưa cam kết metadata filesystem đầy đủ.
 - Chưa nghiệm thu Windows/WebView2, macOS Intel, filesystem mạng/removable, rút ổ, hết dung lượng/power loss phần cứng. Windows sync file/journal và rename write-through, chưa có directory fsync tương đương Mac. Process crash tests không thay thử mất điện.
 - Clipboard Cut/Paste do Finder/Explorer thực hiện nằm ngoài transaction/Undo của app. Bộ lọc “Screenshots” dựa vào thiếu metadata camera không chứng minh đó là screenshot; luôn kiểm tra danh sách xác nhận trước Trash.
-- Bản phát hành/đang cài 1.0.10 chưa tự nhận các sửa này. Checklist máy Windows: [windows_data_safety_checklist.md](windows_data_safety_checklist.md).
+- Bản public1.0.12 đã chứa các sửa này; app1.0.10 cần cập nhật lên1.0.12 để nhận. Updater E2E Mac Silicon1.0.10→1.0.12 đã đạt; Windows/Intel GUI vẫn chưa nghiệm thu. Checklist máy Windows: [windows_data_safety_checklist.md](windows_data_safety_checklist.md).

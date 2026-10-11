@@ -1,6 +1,6 @@
 # VXPhotos — Nghiệm thu Windows an toàn dữ liệu
 
-Ngày cập nhật: 2026-10-11. Bản sửa được chuẩn bị ở 1.0.12; core safety đã QA ở commit `693e46661e68410da88870906dbbba856e1acac6` của draft 1.0.11 chưa publish. Không dùng bản phát hành 1.0.10 cũ. Mọi thử nghiệm dùng ảnh sao chép/fixture riêng, không dùng bộ gốc.
+Ngày cập nhật: 2026-10-11. Bản sửa đã public ở [1.0.12](https://github.com/linhbv94/Photo_Picker/releases/tag/v1.0.12), tag commit `ceb8be3691687d755275d6f389affd2c5234ecf9`. Core safety giống bản1.0.11 đã QA; draft1.0.11 không publish. Không dùng bản phát hành 1.0.10 cũ. Mọi thử nghiệm dùng ảnh sao chép/fixture riêng, không dùng bộ gốc.
 
 ## Môi trường cần có
 
@@ -30,4 +30,4 @@ npm run tauri dev
 
 SHA-256 dùng `Get-FileHash -Algorithm SHA256` hoặc `certutil -hashfile <path> SHA256`. Báo kết quả kèm OS, filesystem, commit/source, output tests và journal liên quan; không gửi ảnh riêng tư hoặc log chứa dữ liệu cá nhân không cần thiết.
 
-Windows core đã type-check trên Mac; [Windows PR CI](https://github.com/linhbv94/Photo_Picker/actions/runs/38118482590) đã chạy đạt frontend, 28 Rust tests, 10 bridge cases và updater regression. Các ô GUI/WebView2 trên vẫn chưa được đánh dấu pass thay cho thử trên máy Windows thật. Trạng thái release cuối: [báo cáo phát hành](release_1_0_12.md).
+Windows core đã type-check trên Mac; [Windows PR CI](https://github.com/linhbv94/Photo_Picker/actions/runs/38118482590) đã chạy đạt frontend, 28 Rust tests, 10 bridge cases và updater regression. Các ô GUI/WebView2 trên vẫn chưa được đánh dấu pass thay cho thử trên máy Windows thật. [Release CI1.0.12](https://github.com/linhbv94/Photo_Picker/actions/runs/38119415227) cả3 targets và validate đã success; chữ ký gói Windows public đã xác minh. Trạng thái release cuối: [báo cáo phát hành](release_1_0_12.md).
