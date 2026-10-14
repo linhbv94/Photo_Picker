@@ -24,6 +24,7 @@ import { ContextMenu, ContextMenuState } from './components/ContextMenu';
 import { SettingsModal } from './components/SettingsModal';
 import { Toast, ToastMessage } from './components/Toast';
 import { t, Language } from './i18n/translations';
+import { addRecentItem } from './services/recent_service';
 
 export const App: React.FC = () => {
   // Folder & Data States
@@ -128,28 +129,51 @@ export const App: React.FC = () => {
   };
 
   // 1. Load Folder Action
-  const loadFolder = useCallback(async (path: string, keepMarked: string[] = []) => {
+  const loadFolder = useCallback(async (path: string, keepMarked: string[] = []): Promise<boolean> => {
     const request = ++folderLoadId.current;
     try {
       const [dirResult, subResult] = await Promise.all([tauriApi.readDirectory(path), tauriApi.getSubfolders(path)]);
-      if (request !== folderLoadId.current) return;
+      if (request !== folderLoadId.current) return false;
       scanId.current = dirResult.scan_id;
       const early = new Map((earlyExif.current.get(dirResult.scan_id) || []).map(item => [item.file_id, item.exif]));
       earlyExif.current.delete(dirResult.scan_id);
       setFolderPath(path); setFiles(dirResult.files.map(file => early.has(file.id) ? { ...file, exif: early.get(file.id) || null, exif_loaded: true } : file)); setSubfolders(subResult);
       setMarkedIds(new Set(keepMarked)); setLastMarkedAnchorId(null);
       setSelectedId(dirResult.files[0]?.id || null);
+      return true;
     } catch (err: unknown) {
       if (request === folderLoadId.current) showToast('error', `Lỗi tải thư mục: ${err}`);
+      return false;
     }
   }, []);
 
   // Open Folder Dialog
   const handleOpenFolder = async () => {
+    if (mutationBusy.current || fileDialog || isRenameModalOpen) {
+      showToast('info', 'Hãy hoàn tất hoặc đóng thao tác đang mở');
+      return;
+    }
     try {
       const selected = await tauriApi.selectFolder(folderPath || undefined);
-      if (selected) await loadFolder(selected);
+      if (selected) {
+        const ok = await loadFolder(selected);
+        if (ok) {
+          addRecentItem('vxphotos_recent_folders', selected);
+        }
+      }
     } catch (error: unknown) { showToast('error', String(error)); }
+  };
+
+  // Open Recent Folder
+  const handleOpenRecentFolder = async (path: string) => {
+    if (mutationBusy.current || fileDialog || isRenameModalOpen) {
+      showToast('info', 'Hãy hoàn tất hoặc đóng thao tác đang mở');
+      return;
+    }
+    const ok = await loadFolder(path);
+    if (ok) {
+      addRecentItem('vxphotos_recent_folders', path);
+    }
   };
 
   // 2. Listen to streaming EXIF chunks from background worker
@@ -777,6 +801,7 @@ export const App: React.FC = () => {
       {/* 1. Custom Titlebar & Menu Bar */}
       <WindowBar
         onOpenFolder={handleOpenFolder}
+        onOpenFolderPath={handleOpenRecentFolder}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onSelectAll={handleSelectAll}
         onUnmarkAll={handleUnmarkAll}
@@ -786,6 +811,7 @@ export const App: React.FC = () => {
         onToggleInfo={() => setIsInfoOpen((p) => !p)}
         onSwitchView={setViewMode}
         language={language}
+        busy={Boolean(fileDialog || isRenameModalOpen)}
       />
 
       {/* 2. Top Filter Toolbar */}
