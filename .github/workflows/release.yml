@@ -95,6 +95,8 @@ jobs:
       # then reuses the binary instead of hitting its cold-build timeout.
       - name: Test update lifecycle
         run: npm run test:updates
+      - name: Recent opening regression
+        run: node --test scripts/test_recent.mjs
       - name: Build and upload signed updater packages
         uses: tauri-apps/tauri-action@v1
         env:

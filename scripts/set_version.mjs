@@ -11,7 +11,8 @@ const lock = readJson('package-lock.json');
 const cargo = readFileSync('src-tauri/Cargo.toml', 'utf8');
 const cargoLock = readFileSync('src-tauri/Cargo.lock', 'utf8');
 const escape = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const packagePattern = new RegExp('(\\[\\[package\\]\\]\\nname = "' + escape(pkg.name) + '"\\nversion = ")[^"]+(")');
+const rustName=cargo.match(/\[package\][\s\S]*?\nname = "([^"]+)"/)?.[1];
+const packagePattern = new RegExp('(\\[\\[package\\]\\]\\nname = "' + escape(rustName) + '"\\nversion = ")[^"]+(")');
 if (!packagePattern.test(cargoLock)) throw new Error('App package not found in Cargo.lock');
 pkg.version = config.version = lock.version = lock.packages[''].version = version;
 for (const [path, value] of [['package.json', pkg], ['package-lock.json', lock], ['src-tauri/tauri.conf.json', config]]) {

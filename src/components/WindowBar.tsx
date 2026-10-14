@@ -9,9 +9,11 @@ import {
   Camera,
 } from 'lucide-react';
 import { t, Language } from '../i18n/translations';
+import { RecentButton } from './recent_button';
 
 interface WindowBarProps {
   onOpenFolder: () => void;
+  onOpenFolderPath?: (path: string) => void;
   onOpenSettings: () => void;
   onSelectAll: () => void;
   onUnmarkAll: () => void;
@@ -21,10 +23,12 @@ interface WindowBarProps {
   onToggleInfo: () => void;
   onSwitchView: (mode: 'grid' | 'detail') => void;
   language?: Language;
+  busy?: boolean;
 }
 
 export const WindowBar: React.FC<WindowBarProps> = ({
   onOpenFolder,
+  onOpenFolderPath,
   onOpenSettings,
   onSelectAll,
   onUnmarkAll,
@@ -34,6 +38,7 @@ export const WindowBar: React.FC<WindowBarProps> = ({
   onToggleInfo,
   onSwitchView,
   language = 'vi',
+  busy = false,
 }) => {
   const isMac =
     typeof navigator !== 'undefined' &&
@@ -78,7 +83,7 @@ export const WindowBar: React.FC<WindowBarProps> = ({
 
   const menus: Record<string, Array<{ label: string; shortcut?: string; action: () => void }>> = {
     [t('file', language)]: [
-      { label: t('openFolder', language), shortcut: 'Cmd/Ctrl+O', action: onOpenFolder },
+      { label: t('openFolder', language), shortcut: 'Cmd/Ctrl+O', action: () => { if (!busy) onOpenFolder(); } },
       { label: t('settings', language), shortcut: 'Cmd/Ctrl+,', action: onOpenSettings },
     ],
     [t('edit', language)]: [
@@ -170,14 +175,21 @@ export const WindowBar: React.FC<WindowBarProps> = ({
         style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
         className="flex items-center gap-1.5"
       >
-        <button
-          onClick={onOpenFolder}
-          className="flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-300 dark:bg-cyan-500/15 dark:hover:bg-cyan-500/25 dark:text-cyan-300 dark:border-cyan-500/30 transition-all active:scale-95 text-xs font-medium mr-1 shadow-2xs leading-none"
-          title={t('openFolder', language)}
-        >
-          <FolderOpen className="w-3.5 h-3.5" />
-          <span>{t('openFolder', language)}</span>
-        </button>
+        <RecentButton
+          type="folder"
+          storageKey="vxphotos_recent_folders"
+          label={t('openFolder', language)}
+          title={`${t('openFolder', language)} (Cmd/Ctrl+O)`}
+          icon={<FolderOpen className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />}
+          disabled={busy}
+          onMainClick={onOpenFolder}
+          onSelectRecent={(path) => {
+            if (onOpenFolderPath) onOpenFolderPath(path);
+            else onOpenFolder();
+          }}
+          dropdownAlign="right"
+          emptyLabel="Chưa có thư mục gần đây"
+        />
 
         <button
           onClick={onOpenSettings}
