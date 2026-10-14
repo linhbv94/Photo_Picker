@@ -1,0 +1,96 @@
+{
+  "version": "1.0.13",
+  "id": 412870206,
+  "tag": "v1.0.13",
+  "draft": false,
+  "verifiedPackages": 3,
+  "tamperRejectedPackages": 3,
+  "assets": [
+    {
+      "name": "latest.json",
+      "size": 4690,
+      "sha256": "e9c9bee25a58f9bca8b8d9a131773a3422217fbe575911988528479b9f0734d2"
+    },
+    {
+      "name": "vxphotos_1.0.13_macos_intel.app.tar.gz",
+      "size": 5958448,
+      "sha256": "a2127db5014bf077f2d330fb68383cd12c16c9845924cabf0b1038e698949993"
+    },
+    {
+      "name": "vxphotos_1.0.13_macos_intel.dmg",
+      "size": 6563342,
+      "sha256": "8ca4309799f5dc4459a371a80c6d056117da63fff5d82def8eadd44a122f05ea"
+    },
+    {
+      "name": "vxphotos_1.0.13_macos_silicon.app.tar.gz",
+      "size": 5737748,
+      "sha256": "b43314e02113b2c910d397132155de4d498180ab876c443d68b43e75cbdb8978"
+    },
+    {
+      "name": "vxphotos_1.0.13_macos_silicon.dmg",
+      "size": 6293646,
+      "sha256": "c2838fd86fa1fc287b72f2f808c193cdab4d464acd2e3ec11b50d34c738941a1"
+    },
+    {
+      "name": "vxphotos_1.0.13_windows_x64_setup.exe",
+      "size": 3480165,
+      "sha256": "c26cec39a9f7ba6fe6460715fc62132866cc4b0954812a2fb1dd0a769c9f6d5a"
+    }
+  ],
+  "macPackages": [
+    {
+      "platform": "silicon",
+      "architecture": "arm64",
+      "codesign": true,
+      "iconMatchesTag": true,
+      "dmgMatchesUpdater": true
+    },
+    {
+      "platform": "intel",
+      "architecture": "x86_64",
+      "codesign": true,
+      "iconMatchesTag": true,
+      "dmgMatchesUpdater": true
+    }
+  ],
+  "verifiedAsDraft": true,
+  "public": {
+    "tag": "v1.0.13",
+    "releaseUrl": "https://github.com/linhbv94/VXPhotos/releases/tag/v1.0.13",
+    "draft": false,
+    "prerelease": false,
+    "latestManifestMatches": true,
+    "legacyEndpointMatches": true,
+    "assets": [
+      {
+        "name": "latest.json",
+        "status": 200
+      },
+      {
+        "name": "vxphotos_1.0.13_macos_intel.app.tar.gz",
+        "status": 200
+      },
+      {
+        "name": "vxphotos_1.0.13_macos_intel.dmg",
+        "status": 200
+      },
+      {
+        "name": "vxphotos_1.0.13_macos_silicon.app.tar.gz",
+        "status": 200
+      },
+      {
+        "name": "vxphotos_1.0.13_macos_silicon.dmg",
+        "status": 200
+      },
+      {
+        "name": "vxphotos_1.0.13_windows_x64_setup.exe",
+        "status": 200
+      }
+    ]
+  },
+  "releaseCommit": "c75470d989dfc74bddb313a61a85af63b79015a8",
+  "buildRun": 38588672837,
+  "publishRun": 38593965524,
+  "nativeQa": "Apple Silicon: PNG fixture, Cancel, keyboard Recent/reopen; backend30tests + Windows CI safety passed",
+  "updaterE2EThisTurn": false
+}

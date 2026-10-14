@@ -15,3 +15,7 @@ Frontend/bundle, updater/release regression và Rust safety30passed1ignored đ�
 GUI kiểm tra trên Apple Silicon. Pure mouse-hover chưa kiểm tra native; focus/keyboard/click Recent đã kiểm tra ở Photos/Clean, Media dựa trên shared component/source và regression. Windows/Intel GUI chưa chạy trong lượt này. Media/Photos chờ build CI Windows+haiMac; Clean chỉ haiMac, không phát hành Windows ở track này.
 
 CI/package/signature/tamper/icon/public sẽ ghi sau khi xác minh.
+
+## Kết quả public
+
+[Release1.0.13](https://github.com/linhbv94/VXPhotos/releases/tag/v1.0.13) stable/latest, SHA c75470d989dfc74bddb313a61a85af63b79015a8. Build38588672837 và publish38593965524 success. Sáu assets/ba package signatures+tamper rejection đạt; haiMac metadata/architecture/codesign/icon tại tag/DMG khớp updater đạt. Endpoint mới và Photo_Picker cũ trả1.0.13, sáu assets public200 không token. Chưa chạy lại old→new updater E2E trong lượt này. [Evidence](release_1_0_13_evidence.json).
